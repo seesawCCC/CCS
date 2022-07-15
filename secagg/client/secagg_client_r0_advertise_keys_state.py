@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-11 21:21:18
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-07-12 16:04:17
+# @Last Modified time: 2022-07-15 19:15:23
 
 from .secagg_client_alive_base_state import SecAggClientAliveBaseState
 from .secagg_client_terminal_state import SecAggClientCompletedState, SecAggClientAbortedState
@@ -11,6 +11,8 @@ from .secagg_client_r1_share_keys_input_set_state import SecAggClientR1ShareKeys
 from .client_state import ClientState
 from ..shared.ecdh_key_agreement import EcdhKeyAgreement
 from ..shared.cs_message import ClientToServerWrapperMessage
+
+# 有关返回的StatusOr<T>可能会自建一个类来处理
 
 class SecAggClientR0AdvertiseKeysBaseState(SecAggClientAliveBaseState):
 	def __init__(self, max_clients_expected, minimum_surviving_clients_for_reconstruction, input_vector_specs,\
@@ -39,7 +41,7 @@ class SecAggClientR0AdvertiseKeysBaseState(SecAggClientAliveBaseState):
 			else:
 				return SecAggClientAbortedState("Aborting because of abort message from the server.", self._sender, self._transition_listener)
 		else:
-			return self.HandleMessage(message)
+			return super().HandleMessage(message)
 
 	def _next_Rstate(self, enc_key_agreement, prng_key_agreement):
 		return None
@@ -71,10 +73,11 @@ class SecAggClientR0AdvertiseKeysInputNotSetState(SecAggClientR0AdvertiseKeysBas
 
 	def SetInput(self, input_map):
 		if not self.ValidateInput(input_map, self._input_vector_specs):
-			# FCP_STATUS这一块暂且留空, 先返回一个None
-			return None
-		return SecAggClientR0AdvertiseKeysInputSetState(self._max_clients_expected, self._minimum_surviving_clients_for_reconstruction, input_map\
-					self._input_vector_specs, self._prng, self._sender, self._transition_listener, self._prng_factory, self._async_abort)
+			# FCP_STATUS的具体细节到时再实现
+			information = "The input to SetInput does not match the InputVectorSpecification."
+			return FCP_STATUS(INVALID_ARGUMENT, information)
+		return SecAggClientR0AdvertiseKeysInputSetState(self._max_clients_expected, self._minimum_surviving_clients_for_reconstruction, input_map,\
+			self._input_vector_specs, self._prng, self._sender, self._transition_listener, self._prng_factory, self._async_abort)
 
 	def StateName(self):
 		return "R0_ADVERTISE_KEYS_INPUT_NOT_SET"
