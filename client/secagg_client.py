@@ -2,18 +2,20 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-11 17:35:22
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-07-12 00:11:28
+# @Last Modified time: 2022-07-15 19:25:22
 
 import threading
 
 from .secagg_client_r0_advertise_keys_state import SecAggClientR0AdvertiseKeysInputNotSetState
-from .secagg_client_state import SecAggClientState
 
 class SecAggClient():
 
+	_class_lock = threading.Lock()
+
 	def __new__(cls, *args, **kwargs):
-		if not cls.__dict__.get('_instance', None):
-			cls._instance = super(SecAggClient, cls).__new__(cls)
+		with cls._class_lock:
+			if not cls.__dict__.get('_instance', None):
+				cls._instance = super(SecAggClient, cls).__new__(cls)
 		return cls._instance
 
 	def __init__(self, max_clients_expected, minimum_surviving_clients_for_reconstruction, input_vector_specs, prng,\
@@ -27,8 +29,8 @@ class SecAggClient():
 	def Start(self):
 		with self._mu:
 			state_or_error = self._state.Start()
-			if state_or_error:
-				self._state = state_or_error
+			if state_or_error.ok():
+				self._state = state_or_error.value()
 			return self._get_process_state(state_or_error)  
 
 	def Abort(self, reason=''):
@@ -37,28 +39,27 @@ class SecAggClient():
 		self._async_abort.Abort(reason)
 		with self._mu:
 			if self._state.IsAborted() or self._state.IsCompletedSuccessfully():
-				# FCP_STATUS(OK),暂且用1来指代这个absl::StatusCode::kOk.
-				return 1
+				return FCP_STATUS(OK)
 			state_or_error = self._state.Abort(reason)
-			if state_or_error:
-				self._state = state_or_error
+			if state_or_error.ok():
+				self._state = state_or_error.value()
 			return self._get_process_state(state_or_error)
 
 	def SetInput(self, input_map):
 		with self._mu:
 			state_or_error = self._state.SetInput(input_map)
-			if state_or_error:
-				self._state = state_or_error
+			if state_or_error.ok():
+				self._state = state_or_error.value()
 			return self._get_process_state(state_or_error)
 
 	def ReceiveMessage(self, incoming):
 		with self._mu:
 			state_or_error = self._state.ReceiveMessage(incoming)
-			if state_or_error:
-				self._state = state_or_error
+			if state_or_error.ok():
+				self._state = state_or_error.value()
 				return not (self._state.IsAborted() or self._state.IsCompletedSuccessfully())
 			else:
-				return state_or_error.State()
+				return state_or_error.status()
 
 	def ErrorMessage(self):
 		with self._mu:
@@ -77,11 +78,12 @@ class SecAggClient():
 			return self._state.StateName()
 
 	def Close(self):
-		del self.__class__._instance 
-		self.__class__._instance = None
+		with self.__class__._class_lock:
+			del self.__class__._instance 
+			self.__class__._instance = None
 
 	def _get_process_state(self, state_or_error):
-		return state_or_error.State() if state_or_error else state_or_error
+		return state_or_error.status() if state_or_error else state_or_error
 
 
 

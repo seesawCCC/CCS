@@ -17,7 +17,7 @@ class SecAggClientAliveBaseState(SecAggClientState):
 	def Abort(self, reason):
 		return AbortAndNotifyServer("Abort upon external request for reason <{}>.".format(reason)) ;
 
-	def AbortAndNotifyServer(self,reason):
+	def AbortAndNotifyServer(reason):
 		message_to_server = ClientToServerWrapperMessage()
 		message_to_server.mutable_abort().set_diagnostic_info(reason)
 		self.sender.Send(message_to_server)
