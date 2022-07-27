@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 # @Author: gonglinxiao
 # @Date:   2022-07-08 20:18:58
-# @Last Modified time: 2022-07-26 11:50:19
+# @Last Modified time: 2022-07-15 18:45:44
 
 # 注意: FAILED_PRECONDITION以及FCP_STATUS()以后要根据模块的不同来重新构写
 # 对于 FAILED_PRECONDITION以及FCP_STATUS的引用等确定了之后的细节再来补充
-FAILED_PRECONDITION = 1
 
 class SecAggClientState():
 	def __init__(self, sender, transition_listener, state):

@@ -6,6 +6,9 @@
 
 from .secagg_client_r1_share_keys_base_state import SecAggClientR1ShareKeysBaseState, R1ShareKeysStateDeliveredMessage
 from .secagg_client_terminal_state import SecAggClientCompletedState, SecAggClientAbortedState
+from .secagg_client_r2_masked_input_coll_input_set_state import SecAggClientR2MaskedInputCollInputSetState
+from .secagg_client_r2_masked_input_coll_input_not_set_state import SecAggClientR2MaskedInputCollInputNotSetState
+
 
 class SecAggClientR1ShareKeysCommonState(SecAggClientR1ShareKeysBaseState):
 	def __init__(self, max_clients_expected, minimum_surviving_clients_for_reconstruction, enc_key_agreement, \
