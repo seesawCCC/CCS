@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-11 21:21:18
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-07-23 19:50:56
+# @Last Modified time: 2022-07-26 12:41:19
 
 from .secagg_client_alive_base_state import SecAggClientAliveBaseState
 from .secagg_client_terminal_state import SecAggClientCompletedState, SecAggClientAbortedState
@@ -48,7 +48,7 @@ class SecAggClientR0AdvertiseKeysBaseState(SecAggClientAliveBaseState):
 class SecAggClientR0AdvertiseKeysInputSetState(SecAggClientR0AdvertiseKeysBaseState):
 	def __init__(self, max_clients_expected, minimum_surviving_clients_for_reconstruction, input_map, input_vector_specs,\
 				prng, sender, transition_listener, prng_factory, async_abort = None):
-		super().__init__(max_clients_expected, minimum_surviving_clients_for_reconstruction, input_map, input_vector_specs,\
+		super().__init__(max_clients_expected, minimum_surviving_clients_for_reconstruction, input_vector_specs,\
 				prng, sender, transition_listener, prng_factory, async_abort)
 		self._input_map = input_map
 
@@ -63,7 +63,7 @@ class SecAggClientR0AdvertiseKeysInputSetState(SecAggClientR0AdvertiseKeysBaseSt
 class SecAggClientR0AdvertiseKeysInputNotSetState(SecAggClientR0AdvertiseKeysBaseState):
 	def __init__(self, max_clients_expected, minimum_surviving_clients_for_reconstruction, input_vector_specs,\
 				prng, sender, transition_listener, prng_factory, async_abort):
-		super().__init__(max_clients_expected, minimum_surviving_clients_for_reconstruction, input_map, input_vector_specs,\
+		super().__init__(max_clients_expected, minimum_surviving_clients_for_reconstruction, input_vector_specs,\
 				prng, sender, transition_listener, prng_factory, async_abort)
 
 	def _next_Rstate(self, enc_key_agreement, prng_key_agreement):
