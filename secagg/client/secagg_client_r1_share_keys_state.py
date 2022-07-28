@@ -2,12 +2,15 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-16 19:37:18
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-07-16 21:29:20
+# @Last Modified time: 2022-07-28 16:38:42
 
 from .secagg_client_r1_share_keys_base_state import SecAggClientR1ShareKeysBaseState, R1ShareKeysStateDeliveredMessage
 from .secagg_client_terminal_state import SecAggClientCompletedState, SecAggClientAbortedState
 from .secagg_client_r2_masked_input_coll_input_set_state import SecAggClientR2MaskedInputCollInputSetState
 from .secagg_client_r2_masked_input_coll_input_not_set_state import SecAggClientR2MaskedInputCollInputNotSetState
+from ..shared.aes_key import AesKey
+from base.monitoring import FCP_STATUS, StatusCode, StatusWarp
+
 
 
 class SecAggClientR1ShareKeysCommonState(SecAggClientR1ShareKeysBaseState):
@@ -24,7 +27,7 @@ class SecAggClientR1ShareKeysCommonState(SecAggClientR1ShareKeysBaseState):
 		self._self_prng_key_shares = []
 		self._pairwise_prng_key_shares = []
 
-
+	@StatusWarp
 	def HandleMessage(self, message):
 		if message.has_abort():
 			if message.abort().early_success():
@@ -74,6 +77,7 @@ class SecAggClientR1ShareKeysInputNotSetState(SecAggClientR1ShareKeysCommonState
 		super().__init__(max_clients_expected, minimum_surviving_clients_for_reconstruction, enc_key_agreement, \
 			input_vector_specs, prng, prng_key_agreement, sender, transition_listener, prng_factory, async_abort)
 
+	@StatusWarp
 	def SetInput(self, input_map):
 		if not self.ValidateInput(input_map, self._input_vector_specs):
 			information = "The input to SetInput does not match the InputVectorSpecification."

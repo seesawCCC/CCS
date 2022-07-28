@@ -2,13 +2,16 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-15 19:51:35
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-07-16 20:13:10
+# @Last Modified time: 2022-07-28 16:26:26
 
 # 等待具体实现时再来重新修改keys.enc_pk()这方面的东西
 from .client_state import ClientState, OtherClientState
 from .secagg_client_alive_base_state import SecAggClientAliveBaseState
 from ..shared import compute_session_id
-from ..shared.cs_message import ClientToServerWrapperMessage
+from ..shared.secagg_messages import ClientToServerWrapperMessage, PairOfKeyShares
+from ..shared.shamir_secret_sharing import ShamirSecretSharing
+from ..shared.ecdh_keys import EcdhPublicKey
+from ..shared.aes_key import AesKey
 
 class R1ShareKeysStateDeliveredMessage():
 	def __init__(self, prng, self_prng_key_shares, pairwise_prng_key_shares):
@@ -19,7 +22,7 @@ class R1ShareKeysStateDeliveredMessage():
 		self.other_client_enc_keys = []
 		self.other_client_prng_keys = []
 		self.other_client_states = []
-		self.session_id = SessionId()
+		self.session_id = compute_session_id.SessionId()
 		self.prng = prng
 		self.self_prng_key_shares = self_prng_key_shares
 		self.pairwise_prng_key_shares = pairwise_prng_key_shares

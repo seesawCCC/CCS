@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-26 20:41:19
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-07-26 22:50:01
+# @Last Modified time: 2022-07-28 15:20:13
 
 import sys, os
 from enum import Enum, unique
@@ -26,6 +26,7 @@ class StatusCode(Enum):
 	INTERNAL = 14
 	UNAVAILABLE = 15
 	DATA_LOSS = 16
+	FAILED_UNKNOWN = 17
 
 def FCP_CHECK(condition, information=''):
 	if not condition:
@@ -82,13 +83,22 @@ class StatusBuilder():
 
 def StatusWarp(obj):
 	def inner(self, *args, **kwargs):
-		result = obj(self, *args, **kwargs)
+		status = StatusCode.OK
+		message = ''
+		try:
+			result = obj(self, *args, **kwargs)
+		except Exception as e:
+			# 这里可以记录e
+			print(e)
+			status = StatusCode.FAILED_UNKNOWN
+			message = str(e)
+			result = None
 		if isinstance(result, Status):
 			pass
 		elif isinstance(result, StatusBuilder):
 			result = result.Status()
 		else:
-			result = Status(StatusCode.OK, result, '')
+			result = Status(status, result, message )
 		return result
 	return inner
 
