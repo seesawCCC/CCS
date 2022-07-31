@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-16 19:37:18
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-07-28 16:38:42
+# @Last Modified time: 2022-07-31 00:50:07
 
 from .secagg_client_r1_share_keys_base_state import SecAggClientR1ShareKeysBaseState, R1ShareKeysStateDeliveredMessage
 from .secagg_client_terminal_state import SecAggClientCompletedState, SecAggClientAbortedState
@@ -41,7 +41,8 @@ class SecAggClientR1ShareKeysCommonState(SecAggClientR1ShareKeysBaseState):
 		self_prng_key_buffer = [0]*AesKey.kSize
 		for i in range(AesKey.kSize):
 			self_prng_key_buffer[i] = self._prng.Rand8()
-		self_prng_key = AesKey(self_prng_key_buffer)
+		self_prng_key_buffer = [int.to_bytes(i, 1, 'little') for i in self_prng_key_buffer]
+		self_prng_key = AesKey(b''.join(self_prng_key_buffer))
 
 		r1_delivered_message = R1ShareKeysStateDeliveredMessage(self._prng, self._self_prng_key_shares, self._pairwise_prng_key_shares)
 		success = self.HandleShareKeysRequest(message.share_keys_request(), self._enc_key_agreement, self._max_clients_expected, self._minimum_surviving_clients_for_reconstruction, self._prng_key_agreement, self_prng_key, r1_delivered_message) 

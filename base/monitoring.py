@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-26 20:41:19
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-07-28 15:20:13
+# @Last Modified time: 2022-07-30 12:21:50
 
 import sys, os
 from enum import Enum, unique
@@ -39,7 +39,7 @@ def FCP_STATUS(code, reason='', value=None):
 	return MakeStatusBuilder(code, file_path, line, reason, value)
 
 def MakeStatusBuilder(code, file_path, line, reason, value):
-	return StatusBuilder(code, file_path, line, reason, value)
+	return StatusBuilder(code, file_path, line, reason, value).Status()
 
 class Status():
 	def __init__(self, code, value, reason):
@@ -53,8 +53,14 @@ class Status():
 	def status(self):
 		return self._code
 
+	def code(self):
+		return self._code
+
 	def value(self):
 		return self._value
+
+	def reason(self):
+		return self._reason
 
 class StatusBuilder():
 	def __init__(self, code, file, line, reason, value):
@@ -73,8 +79,9 @@ class StatusBuilder():
 	def Status(self):
 		if not self.ok():
 			message = "(at {}:{}){}".format(os.path.basename(self._file), self._line, self._message)
+			self._message = message
 			# Logger处理，现在先换成print
-			print(message)
+			print(self._message)
 		return Status(self._code, self._value, self._message)
 
 	def value(self):

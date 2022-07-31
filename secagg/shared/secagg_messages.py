@@ -198,10 +198,10 @@ class AdvertiseKeys:
         return self.pair_of_public_keys()
 
 class PairOfPublicKeys:
-    def __init__(self):
+    def __init__(self, noise_pk='', enc_pk=''):
         #bytes类型 无符号的一个字节
-        self._noise_pk = 0
-        self._enc_pk = 0
+        self._noise_pk = noise_pk
+        self._enc_pk = noise_pk
 
     def noise_pk(self):
         return self._noise_pk

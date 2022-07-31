@@ -7,13 +7,20 @@
 
 from .shamir_secret_sharing import ShamirSecretSharing
 
-kSize = 32
 kLegacyKeySize = 17
 
+# data: bytes
 class AesKey:
-    def __init__(self,data, key_size):
-        if (key_size > 0 and key_size <= 17) or (key_size == 32) :
+    kSize = 32
+    
+    def __init__(self, data, key_size=kSize):
+        self._data = data
+        self._key_size = key_size
+        if not ((key_size > 0 and key_size <= 17) or (key_size == 32)):
             print("(key_size > 0 and key_size <= 17) or (key_size == 32)")
+
+    def data(self):
+        return self._data
 
 
     def CreateFromShares(self, shares, threshold):

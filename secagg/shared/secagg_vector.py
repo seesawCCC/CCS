@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-19 18:10:57
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-07-22 18:42:05
+# @Last Modified time: 2022-07-31 10:24:52
 
 # FCP_CHECK到时用一个Logger代替算了
 
@@ -10,7 +10,7 @@ import sys
 from .math import DivideRoundUp, AddModOpt, MultiplyMod
 
 class SecAggVector():
-	kMaxModulus = 1 << 62
+	kMaxModulus = 1<<62
 
 	@classmethod
 	def UnpackUint64FromByteStringAt(cls, index, bit_width, byte_string, chr_width=8):
@@ -97,6 +97,7 @@ class SecAggVector():
 	def num_elements(self):
 		return self._num_elements
 
+	# _packed_bytes是unicode
 	def GetAsPackedBytes(self):
 		self._CheckHasValue()
 		return self._packed_bytes
@@ -206,7 +207,7 @@ class SecAggVector():
 		def Create(self, string_flag=False):
 			packed_bytes = ''.join(self._packed_bytes)			
 			if not string_flag:
-				return SecAggVector(packed_bytes, self._modulus, self._num_elements, True)
+				return SecAggVector(packed_bytes, self._modulus, self._num_elements, branchless_codec=True)
 			else:
 				return packed_bytes
 

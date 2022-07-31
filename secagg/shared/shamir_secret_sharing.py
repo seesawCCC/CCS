@@ -2,12 +2,11 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-22 17:03:02
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-07-23 10:21:39
+# @Last Modified time: 2022-07-30 21:38:39
 
 # Reconstruct返回的StatusOr还没写
 import random
 
-from .key import Key
 from .math import MultiplyMod, DivideRoundUp, IntToByteString
 
 
@@ -28,7 +27,7 @@ class ShamirSecretSharing():
 		self._last_lc_output = []
 
 	def Share(self, threshold, num_shares, to_share):
-		if isinstance(to_share, Key):
+		if not isinstance(to_share, str):
 			to_share = to_share.AsString()
 		assert len(to_share), "to_share must not be empty"
 		assert num_shares > 1, "num_shares must be greater than 1"
@@ -130,7 +129,7 @@ class ShamirSecretSharing():
 		secret_index = len(secret_parts)-1
 		i = len(to_share)-1 
 		while i>=0:
-			current_byte = ord(to_share[i])
+			current_byte = to_share[i] if not isinstance(to_share[i], str) else ord(to_share[i])
 			if self._kBitsPerSubsecret-bits_done > 8:
 				secret_parts[secret_index] |= (current_byte<<bits_done)
 				bits_done += 8
