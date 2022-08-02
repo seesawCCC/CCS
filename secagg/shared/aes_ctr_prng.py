@@ -32,15 +32,21 @@ kMaxBlocks = 0xFFFFFFFF
 # After this, the associated next_byte_pos counter must be set to 0.
 
  # This is used to generate bytes.
-# kAllZeroes[kCacheSize] = {0};
+kAllZeroes = [0] * kCacheSize
+
+
+
+from Crypto.Cipher import AES
+
 
 class AesCtrPrng:
     def __init__(self,seed):
-        # memset(iv, 0, kIvSize) 此处memset函数不知其意
+        # memset(iv, 0, kIvSize) 此处memset函数初始化iv向量
+        iv = [0] * kIvSize
+        # 对称加解密函数EVP_CIPHER|EVP_EncryptInit_ex 采用了AES加密的CTR模式
         # FCP_CHECK(ctx_ = EVP_CIPHER_CTX_new());
-        # FCP_CHECK(1 == EVP_EncryptInit_ex(ctx_, EVP_aes_256_ctr(), nullptr,
-        #                           seed.data(), iv));
-        # if ctx_ = EVP_CIPHER_CTX_new() and 1 == EVP_EncryptInit_ex(ctx_, EVP_aes_256_ctr(), nullptr, seed.data(), iv)
+        # FCP_CHECK(1 == EVP_EncryptInit_ex(ctx_, EVP_aes_256_ctr(), nullptr, seed.data(), iv));
+        self.aes = AES.new(seed.data(),AES.MODE_CTR,iv)
         self.next_byte_pos = kCacheSize
         self.blocks_generated = 0
 
@@ -53,6 +59,7 @@ class AesCtrPrng:
         if self.blocks_generated <= kMaxBlocks :
             print("AesCtrPrng generated " +kMaxBlocks)
             print(" blocks and needs a new seed.")
+        self.aes.update(kAllZeroes)
         # FCP_CHECK(
         #     EVP_EncryptUpdate(ctx_, cache, &bytes_written, kAllZeroes, cache_size));
         # FCP_CHECK(bytes_written == cache_size);
