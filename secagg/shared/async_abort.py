@@ -20,12 +20,15 @@ class AsyncAbort(threading.Thread):
 
 	def Abort(self, message):
 		l.writer_lock.acquire()
-		self._signal = message
+		self._signal.apend(message)
 		l.writer_lock.release()
 
 	
 	def Signalled(self):
-		return self._signal.load(memory_order_relaxed)
+		if self._signal:
+			return True
+		else:
+			return False
 
 	def Message(self):
 		l.reader_lock.acquire()
