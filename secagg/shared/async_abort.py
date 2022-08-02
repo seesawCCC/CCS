@@ -4,16 +4,29 @@
 # @Last Modified by:   shanzhuAndfish
 # @Last Modified time: 2022-07-28 15:19:31
 
-class AsyncAbort():
-	def __init__(self, i):
-		self._i = i
+import threading
+import rwlock
+from base.monitoring import FCP_CHECK
 
-	def Abort(self, reason):
-		print('Abort ' + reason)
-		self._reason = reason
+l = rwlock.RWLock()
+
+class AsyncAbort(threading.Thread):
+
+	def __init__(self, signal):
+		self._signal = signal
+		# 使用了读写锁
+		threading.Thread.__init__(self)
+		FCP_CHECK(self._signal)
+
+	def Abort(self, message):
+		l.writer_lock.acquire()
+		self._signal = message
+		l.writer_lock.release()
+
 	
 	def Signalled(self):
-		pass
+		return self._signal.load(memory_order_relaxed)
 
 	def Message(self):
-		pass
+		l.reader_lock.acquire()
+		return self._signal
