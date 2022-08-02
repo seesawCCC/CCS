@@ -2,9 +2,18 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-19 15:24:50
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-07-22 23:24:33
+# @Last Modified time: 2022-07-31 19:50:18
 
 import struct
+import random
+
+def RandomString(length=12):
+	if length < 1:
+		return b'default password'
+	string_list = []
+	for i in range(length):
+		string_list.append(chr(random.randint(33, 126)).encode('ascii'))
+	return b''.join(string_list)
 
 class ArgumentTypeException(Exception):
 	def __init__(self, arg_type):
@@ -65,3 +74,5 @@ def IntToByteString(input_int):
 	input_bytes = input_int.to_bytes(4, 'big')
 	return input_bytes
 
+def BitWidth(modulus):
+	return len(bin(modulus))-2

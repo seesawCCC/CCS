@@ -16,54 +16,81 @@ class ClientToServerWrapperMessage:
         self._masked_input_response = None
         self._unmasking_response = None
 
-    def get_abort(self):
+    def abort(self):
         return self._abort
+
+    def has_abort(self):
+        return bool(self._abort)
 
     def set_abort(self,abort):
         self._abort = abort
 
     def mutable_abort(self):
-        return self.get_abort() if self._abort else AbortMessage()
+        if not self._abort:
+            self._abort = AbortMessage()
+        return self.abort()
 
-    def get_advertise_keys(self):
+    def advertise_keys(self):
         return self._advertise_keys
 
-    def seta_advertise_keys(self,advertise_keys):
+    def has_advertise_keys(self):
+        return bool(self._advertise_keys)
+
+    def set_advertise_keys(self, advertise_keys):
         self._advertise_keys = advertise_keys
 
     def mutable_advertise_keys(self):
-        return self.get_advertise_keys() if self._advertise_keys else AdvertiseKeys()
+        if not self._advertise_keys:
+            self._advertise_keys = AdvertiseKeys()
+        return self.advertise_keys()
 
-    def get_share_keys_response(self):
+    def share_keys_response(self):
         return self._share_keys_response
+
+    def has_share_keys_response(self):
+        return bool(self._share_keys_response)
 
     def set_share_keys_response(self,share_keys_response):
         self._share_keys_response = share_keys_response
 
     def mutable_share_keys_response(self):
-        return self.get_share_keys_response() if self._share_keys_response else ShareKeysResponse()
+        if not self._share_keys_response:
+            self._share_keys_response = ShareKeysResponse()
+        return self.share_keys_response()
 
-    def get_masked_input_response(self):
+    def masked_input_response(self):
         return self._masked_input_response
+
+    def has_masked_input_response(self):
+        return bool(self._masked_input_response)
 
     def set_masked_input_response(self,masked_input_response):
         self._masked_input_response = masked_input_response
 
     def mutable_masked_input_response(self):
-        return self.get_masked_input_response() if self._masked_input_response else MaskedInputCollectionResponse()
+        if not self._masked_input_response:
+            self._masked_input_response = MaskedInputCollectionResponse()
+        return self.masked_input_response()
 
-    def get_unmasking_response(self):
+    def unmasking_response(self):
         return self._unmasking_response
+
+    def has_unmasking_response(self):
+        return bool(self._unmasking_response)
 
     def set_unmasking_response(self,unmasking_response):
         self._unmasking_response = unmasking_response
 
     def mutable_unmasking_response(self):
-        return self.get_unmasking_response() if self._unmasking_response else UnmaskingResponse()
+        if not self._unmasking_response:
+            self._unmasking_response = UnmaskingResponse()
+        return self.unmasking_response()
 
 
 
 class ServerToClientWrapperMessage:
+    MESSAGE_CONTENT_NOT_SET = 'message_content_not_set'
+
     def __init__(self):
         # 对象
         self._abort = None
@@ -71,54 +98,80 @@ class ServerToClientWrapperMessage:
         self._masked_input_request = None
         self._unmasking_request = None
 
-    def get_abort(self):
+    def message_content_case(self):
+        message_content_case = ServerToClientWrapperMessage.MESSAGE_CONTENT_NOT_SET
+        if not (self._abort is None and self._share_keys_request is None and self._unmasking_request is None):
+            message_content_case = str({'abort': self._abort, 'share_keys_request': self._share_keys_request, 'masked_input_request': self._masked_input_request, 'unmasking_request': self._unmasking_request})
+        return message_content_case
+
+    def abort(self):
         return self._abort
+
+    def has_abort(self):
+        return bool(self._abort)
 
     def set_abort(self, abort):
         self._abort = abort
 
     def mutable_abort(self):
-        return self.get_abort() if self._abort else AbortMessage()
+        if not self._abort:
+            self._abort = AbortMessage()
+        return self.abort()
 
-    def get_share_keys_request(self):
+    def share_keys_request(self):
         return self._share_keys_request
+
+    def has_share_keys_request(self):
+        return bool(self._share_keys_request)
 
     def set_share_keys_request(self, share_keys_request):
         self._share_keys_request = share_keys_request
 
     def mutable_share_keys_request(self):
-        return self.get_share_keys_request() if self._share_keys_request else ShareKeysRequest()
+        if not self._share_keys_request:
+            self._share_keys_request = ShareKeysRequest()
+        return self.share_keys_request()
 
-    def get_masked_input_request(self):
+    def masked_input_request(self):
         return self._masked_input_request
+
+    def has_masked_input_request(self):
+        return bool(self._masked_input_request)
 
     def set_masked_input_request(self, masked_input_request):
         self._masked_input_request = masked_input_request
 
     def mutable_masked_input_request(self):
-        return self._masked_input_request if self._masked_input_request else MaskedInputCollectionRequest()
+        if not self._masked_input_request:
+            self._masked_input_request = MaskedInputCollectionRequest()
+        return self._masked_input_request
 
-    def get_unmasking_request(self):
+    def unmasking_request(self):
         return self._unmasking_request
+
+    def has_unmasking_request(self):
+        return bool(self._unmasking_request)
 
     def set_unmasking_request(self, unmasking_request):
         self._unmasking_request = unmasking_request
 
     def mutable_unmasking_request(self):
-        return self.get_unmasking_request() if self._unmasking_request else UnmaskingRequest()
+        if not self._unmasking_request:
+            self._unmasking_request = UnmaskingRequest()
+        return self.unmasking_request()
 
 class AbortMessage:
     def __init__(self):
-        self._diagnostic_info = " "
+        self._diagnostic_info = ""
         self._early_success = True
 
-    def get_diagnostic_info(self):
+    def diagnostic_info(self):
         return self._diagnostic_info
 
     def set_diagnostic_info(self,diagnostic_info):
         self._diagnostic_info = diagnostic_info
 
-    def get_early_success(self):
+    def early_success(self):
         return self._early_success
 
     def set_early_success(self,early_success):
@@ -130,28 +183,33 @@ class AdvertiseKeys:
         # 对象
         self._pair_of_public_keys = None
 
-    def get_pair_of_public_keys(self):
+    def pair_of_public_keys(self):
         return self._pair_of_public_keys
+
+    def has_pair_of_public_keys(self):
+        return bool(self._pair_of_public_keys)
 
     def set_pair_of_public_keys(self, pair_of_public_keys):
         self._pair_of_public_keys = pair_of_public_keys
 
     def mutable_pair_of_public_keys(self):
-        return self.get_pair_of_public_keys() if self._pair_of_public_keys else PairOfPublicKeys()
+        if not self._pair_of_public_keys:
+            self._pair_of_public_keys = PairOfPublicKeys()
+        return self.pair_of_public_keys()
 
 class PairOfPublicKeys:
-    def __init__(self):
+    def __init__(self, noise_pk='', enc_pk=''):
         #bytes类型 无符号的一个字节
-        self._noise_pk = 0
-        self._enc_pk = 0
+        self._noise_pk = noise_pk
+        self._enc_pk = noise_pk
 
-    def get_noise_pk(self):
+    def noise_pk(self):
         return self._noise_pk
 
     def set_noise_pk(self, noise_pk):
         self._noise_pk = noise_pk
 
-    def get_enc_pk(self):
+    def enc_pk(self):
         return self._enc_pk
 
     def set_enc_pk(self, enc_pk):
@@ -159,33 +217,42 @@ class PairOfPublicKeys:
 
 class ShareKeysRequest:
     def __init__(self):
-        self._pairs_of_public_keys = None # 对象
+        self._pairs_of_public_keys = [] # vector
         self._sec_agg_execution_logging_id = 0
-        self._extra_data = 0 #类型任意
+        self._extra_data = [] #类型任意
         self._session_id = 0
 
-    def get_pairs_of_public_keys(self):
+    def pairs_of_public_keys(self):
         return self._pairs_of_public_keys
 
+    def has_pairs_of_public_keys(self):
+        return bool(self._pairs_of_public_keys)
+
     def set_pairs_of_public_keys(self, pairs_of_public_keys):
-        self._pairs_of_public_keys = pairs_of_public_keys
+        self._pairs_of_public_keys = pairs_of_public_keys[:]
 
     def mutable_pairs_of_public_keys(self):
-        return self.get_pairs_of_public_keys() if self._pairs_of_public_keys else PairOfPublicKeys()
+        return self.pairs_of_public_keys()
 
-    def get_sec_agg_execution_logging_id(self):
+    def add_pairs_of_public_keys(self, item):
+        self._pairs_of_public_keys.append(item)
+
+    def sec_agg_execution_logging_id(self):
         return self._sec_agg_execution_logging_id
 
     def set_sec_agg_execution_logging_id(self, sec_agg_execution_logging_id):
         self._sec_agg_execution_logging_id = sec_agg_execution_logging_id
 
-    def get_extra_data(self):
+    def extra_data(self):
         return self._extra_data
 
     def set_extra_data(self, extra_data):
-        self._extra_data = extra_data
+        self._extra_data = extra_data[:]
 
-    def get_session_id(self):
+    def add_extra_data(self, item):
+        self._extra_data.append(item)
+
+    def session_id(self):
         return self._session_id
 
     def set_session_id(self, session_id):
@@ -193,13 +260,16 @@ class ShareKeysRequest:
 
 class ShareKeysResponse:
     def __init__(self):
-        self._encrypted_key_shares = 0
+        self._encrypted_key_shares = []
 
-    def get_encrypted_key_shares(self):
+    def encrypted_key_shares(self):
         return self._encrypted_key_shares
 
     def set_encrypted_key_shares(self, encrypted_key_shares):
-        self._encrypted_key_shares = encrypted_key_shares
+        self._encrypted_key_shares = encrypted_key_shares[:]
+
+    def add_encrypted_key_shares(self, item):
+        self._encrypted_key_shares.append(item)
 
 
 class PairOfKeyShares:
@@ -207,13 +277,13 @@ class PairOfKeyShares:
         self._noise_sk_share = 0
         self._prf_sk_share = 0
 
-    def get_noise_sk_share(self):
+    def noise_sk_share(self):
         return self._noise_sk_share
 
     def set_noise_sk_share(self, noise_sk_share):
         self._noise_sk_share = noise_sk_share
 
-    def get_prf_sk_share(self):
+    def prf_sk_share(self):
         return self._prf_sk_share
 
     def set_prf_sk_share(self, prf_sk_share):
@@ -222,67 +292,81 @@ class PairOfKeyShares:
 
 class MaskedInputCollectionRequest:
     def __init__(self):
-        self._encrypted_key_shares = 0
+        self._encrypted_key_shares = []
 
-    def get_encrypted_key_shares(self):
+    def encrypted_key_shares(self):
         return self._encrypted_key_shares
 
     def set_encrypted_key_shares(self, encrypted_key_shares):
-        self._encrypted_key_shares = encrypted_key_shares
+        self._encrypted_key_shares = encrypted_key_shares[:]
 
+    def add_encrypted_key_shares(self, item):
+        self._encrypted_key_shares.append(item)
 
 class MaskedInputCollectionResponse:
     def __init__(self):
         #map<string, MaskedInputVector> vectors
         self._vectors = {}
 
-    def get_vectors(self):
+    def vectors(self):
         return self._vectors
 
     def set_vectors(self, vectors):
-        self._vectors = vectors
+        self._vectors = vectors.copy()
 
 
 class MaskedInputVector:
     def __init__(self):
         self._encoded_vector = 0
-        self._extra_data = 0
+        self._extra_data = []
 
-    def get_encoded_vector(self):
+    def encoded_vector(self):
         return self._encoded_vector
 
     def set_encoded_vector(self, encoded_vector):
         self._encoded_vector = encoded_vector
 
-    def get_extra_data(self):
+    def extra_data(self):
         return self._extra_data
 
     def set_extra_data(self, extra_data):
-        self._extra_data = extra_data
+        self._extra_data = extra_data[:]
+
+    def add_extra_data(self, item):
+        self._extra_data.append(item)
 
 class UnmaskingRequest:
     def __init__(self):
-        self._dead_3_client_ids = 0
+        self._dead_3_client_ids = []
 
-    def get_dead_3_client_ids(self):
+    def dead_3_client_ids(self):
         return self._dead_3_client_ids
 
     def set_dead_3_client_ids(self, dead_3_client_ids):
-        self._dead_3_client_ids = dead_3_client_ids
+        self._dead_3_client_ids = dead_3_client_ids[:]
+
+    def add_dead_3_client_ids(self, item):
+        self._dead_3_client_ids.append(item)
 
 
 class UnmaskingResponse:
     def __init__(self):
-        self._noise_or_prf_key_shares = None
+        self._noise_or_prf_key_shares = []
 
-    def get_noise_or_prf_key_shares(self):
+    def noise_or_prf_key_shares(self):
         return self._noise_or_prf_key_shares
 
+    def has_noise_or_prf_key_shares(self):
+        return bool(self._noise_or_prf_key_shares)
+
     def set_noise_or_prf_key_shares(self, noise_or_prf_key_shares):
-        self._noise_or_prf_key_shares = noise_or_prf_key_shares
+        self._noise_or_prf_key_shares = noise_or_prf_key_shares[:]
 
     def mutable_noise_or_prf_key_shares(self):
-        return self.get_noise_or_prf_key_shares() if self._noise_or_prf_key_shares else NoiseOrPrfKeyShare()
+        return self.noise_or_prf_key_shares()
+
+    def add_noise_or_prf_key_shares(self, item):
+        self._noise_or_prf_key_shares.append(item)
 
 
 class NoiseOrPrfKeyShare:
@@ -290,13 +374,13 @@ class NoiseOrPrfKeyShare:
         self._noise_sk_share = 0
         self._prf_sk_share = 0
 
-    def get_noise_sk_share(self):
+    def noise_sk_share(self):
         return self._noise_sk_share
 
     def set_noise_sk_share(self, noise_sk_share):
         self._noise_sk_share = noise_sk_share
 
-    def get_prf_sk_share(self):
+    def prf_sk_share(self):
         return self._prf_sk_share
 
     def set_prf_sk_share(self, prf_sk_share):

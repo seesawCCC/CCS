@@ -2,12 +2,15 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-16 19:37:18
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-07-16 21:29:20
+# @Last Modified time: 2022-07-31 00:50:07
 
 from .secagg_client_r1_share_keys_base_state import SecAggClientR1ShareKeysBaseState, R1ShareKeysStateDeliveredMessage
 from .secagg_client_terminal_state import SecAggClientCompletedState, SecAggClientAbortedState
 from .secagg_client_r2_masked_input_coll_input_set_state import SecAggClientR2MaskedInputCollInputSetState
 from .secagg_client_r2_masked_input_coll_input_not_set_state import SecAggClientR2MaskedInputCollInputNotSetState
+from ..shared.aes_key import AesKey
+from base.monitoring import FCP_STATUS, StatusCode, StatusWarp
+
 
 
 class SecAggClientR1ShareKeysCommonState(SecAggClientR1ShareKeysBaseState):
@@ -24,7 +27,7 @@ class SecAggClientR1ShareKeysCommonState(SecAggClientR1ShareKeysBaseState):
 		self._self_prng_key_shares = []
 		self._pairwise_prng_key_shares = []
 
-
+	@StatusWarp
 	def HandleMessage(self, message):
 		if message.has_abort():
 			if message.abort().early_success():
@@ -38,7 +41,8 @@ class SecAggClientR1ShareKeysCommonState(SecAggClientR1ShareKeysBaseState):
 		self_prng_key_buffer = [0]*AesKey.kSize
 		for i in range(AesKey.kSize):
 			self_prng_key_buffer[i] = self._prng.Rand8()
-		self_prng_key = AesKey(self_prng_key_buffer)
+		self_prng_key_buffer = [int.to_bytes(i, 1, 'little') for i in self_prng_key_buffer]
+		self_prng_key = AesKey(b''.join(self_prng_key_buffer))
 
 		r1_delivered_message = R1ShareKeysStateDeliveredMessage(self._prng, self._self_prng_key_shares, self._pairwise_prng_key_shares)
 		success = self.HandleShareKeysRequest(message.share_keys_request(), self._enc_key_agreement, self._max_clients_expected, self._minimum_surviving_clients_for_reconstruction, self._prng_key_agreement, self_prng_key, r1_delivered_message) 
@@ -74,6 +78,7 @@ class SecAggClientR1ShareKeysInputNotSetState(SecAggClientR1ShareKeysCommonState
 		super().__init__(max_clients_expected, minimum_surviving_clients_for_reconstruction, enc_key_agreement, \
 			input_vector_specs, prng, prng_key_agreement, sender, transition_listener, prng_factory, async_abort)
 
+	@StatusWarp
 	def SetInput(self, input_map):
 		if not self.ValidateInput(input_map, self._input_vector_specs):
 			information = "The input to SetInput does not match the InputVectorSpecification."
