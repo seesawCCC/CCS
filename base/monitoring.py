@@ -2,9 +2,10 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-26 20:41:19
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-07-30 12:21:50
+# @Last Modified time: 2022-08-02 16:18:07
 
 import sys, os
+import traceback
 from enum import Enum, unique
 
 @unique
@@ -96,7 +97,7 @@ def StatusWarp(obj):
 			result = obj(self, *args, **kwargs)
 		except Exception as e:
 			# 这里可以记录e
-			print(e)
+			traceback.print_exc()
 			status = StatusCode.FAILED_UNKNOWN
 			message = str(e)
 			result = None

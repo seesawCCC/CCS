@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-19 18:10:57
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-08-02 09:40:33
+# @Last Modified time: 2022-08-02 16:55:04
 
 # FCP_CHECK到时用一个Logger代替算了
 
@@ -284,7 +284,7 @@ class SecAggUnpackedVectorMap(dict):
 			plus_value = other.get(key, None)
 			if plus_value is None:
 				raise Exception("other SecAggVectorMap must have the same key {}".format(key))
-			value.add(plus_value)
+			value.Add(plus_value)
 
 
 class SecAggUnpackedVector(list):

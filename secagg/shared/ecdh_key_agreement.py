@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-29 20:02:55
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-07-31 00:39:45
+# @Last Modified time: 2022-08-02 15:14:12
 
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -15,12 +15,12 @@ from .aes_key import AesKey
 class EcdhPrivateKey():
 
 	@staticmethod
-	def LoadFromBytes(private_key_str, password):
-		private_key_bytes = private_key_str.decode('ascii')
+	def LoadFromString(private_key_str, password=''):
+		private_key_bytes = private_key_str.encode('ascii')
 		private_key = serialization.load_pem_private_key(private_key_bytes, password)
 		return EcdhPrivateKey(private_key, password)
 
-	def __init__(self, private_key, password):
+	def __init__(self, private_key, password=''):
 		self._private_key = private_key
 		self._password = password
 
@@ -43,7 +43,7 @@ class EcdhPrivateKey():
 class EcdhPublicKey():
 
 	@staticmethod
-	def LoadFromBytes(public_key_str):
+	def LoadFromString(public_key_str):
 		public_key_bytes = public_key_str.encode('ascii')
 		public_key =  serialization.load_pem_public_key(public_key_bytes)
 		return EcdhPublicKey(public_key)
@@ -65,6 +65,7 @@ class EcdhPublicKey():
 		return self.AsString() == other_pk.AsString()
 
 class EcdhKeyAgreement():
+	private_password = b'#>C<PR|.YqAk'
 
 	# return Status
 	@staticmethod
@@ -106,7 +107,7 @@ class EcdhKeyAgreement():
 		return ecdh
 
 	def __init__(self, key):
-		self._password = RandomString()
+		self._password = EcdhKeyAgreement.private_password
 		private_key = EcdhPrivateKey(key, self._password) if not isinstance(key, EcdhPrivateKey) else key 
 		self._private_key = private_key
 		
@@ -122,6 +123,7 @@ class EcdhKeyAgreement():
 		if isinstance(other_key, EcdhPublicKey):
 			other_ec_key = other_key.GetECPublicKey()
 		elif isinstance(other_key, bytes):
-			other_ec_key = serialization.load_der_public_key(other_key)
+			# print('ComputeSharedSecret', other_key)
+			other_ec_key = serialization.load_pem_public_key(other_key)
 		shared_secret = self._private_key.ComputeSharedSecret(other_ec_key)
 		return AesKey(shared_secret, len(shared_secret))
