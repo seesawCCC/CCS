@@ -46,7 +46,7 @@ class AesCtrPrng:
         # 对称加解密函数EVP_CIPHER|EVP_EncryptInit_ex 采用了AES加密的CTR模式
         # FCP_CHECK(ctx_ = EVP_CIPHER_CTX_new());
         # FCP_CHECK(1 == EVP_EncryptInit_ex(ctx_, EVP_aes_256_ctr(), nullptr, seed.data(), iv));
-        self.aes = AES.new(seed.data(),AES.MODE_CTR)
+        self.aes = AES.new(seed.data(),AES.MODE_GCM)
         self.next_byte_pos = kCacheSize
         self.blocks_generated = 0
         self.cache = [0]* kCacheSize

@@ -31,9 +31,9 @@ class AesKey:
         key_length = 0
         for i in range(len(shares)):
             if key_length == 0:
-                if shares[i].data.size() == 36:
+                if len(shares[i].data) == 36:
                     key_length = self.kSize
-                elif shares[i].data.size() == 20:
+                elif len(shares[i].data) == 20:
                     key_length = kLegacyKeySize
                 else:
                     if shares[i].data.empty():

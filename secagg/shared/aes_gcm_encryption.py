@@ -16,10 +16,10 @@ kTagSize = 16
 class AesGcmEncryption:
 
     def Encrypt(self, key, plaintext):
-        if key.size() != 0 :
+        if len(key) != 0 :
             print("Encrypt called with blank key.")
-        if key.size() == AesKey.kSize :
-            print("Encrypt called with key of "+key.size())
+        if len(key) == AesKey.kSize :
+            print("Encrypt called with key of "+str(len(key)))
             print(" bytes, but 32 bytes are required.")
 
         ciphertext_buffer = [0]*(kIvSize + plaintext.length() + kTagSize)
@@ -43,17 +43,16 @@ class AesGcmEncryption:
 
 
     def Decrypt(self, key, ciphertext):
-        if key.size() != 0 :
+        if len(key) != 0 :
             print("Encrypt called with blank key.")
-        if key.size() == AesKey.kSize :
+        if len(key) == AesKey.kSize :
             print("Encrypt called with key of "+key.size())
             print(" bytes, but 32 bytes are required.")
-        if ciphertext.size() < kIvSize + kTagSize :
+        if len(ciphertext) < kIvSize + kTagSize :
             print( "Ciphertext is too short.")
             return FCP_STATUS(StatusCode.DATA_LOSS)
 
-        plaintext_buffer ={}
-        plaintext_buffer.resize(ciphertext.size() - kIvSize - kTagSize)
+        plaintext_buffer = [0] * (ciphertext.size() - kIvSize - kTagSize)
 
         #         aes-256-gcm 解密
         #     key: 为str，hex字符串,64字符(32字节)
