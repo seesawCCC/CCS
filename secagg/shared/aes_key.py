@@ -10,10 +10,12 @@ from .shamir_secret_sharing import ShamirSecretSharing
 kLegacyKeySize = 17
 
 # data: bytes
-kSize = 32
+
 
 class AesKey:
-    
+
+    kSize = 32
+
     def __init__(self, data, key_size=kSize):
         self._data = data
         self._key_size = key_size
@@ -30,7 +32,7 @@ class AesKey:
         for i in range(len(shares)):
             if key_length == 0:
                 if shares[i].data.size() == 36:
-                    key_length = kSize
+                    key_length = self.kSize
                 elif shares[i].data.size() == 20:
                     key_length = kLegacyKeySize
                 else:
