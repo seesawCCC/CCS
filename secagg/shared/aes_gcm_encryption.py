@@ -8,6 +8,7 @@
 from .aes_key import AesKey
 from Crypto.Cipher import AES
 import base64
+from base.monitoring import FCP_STATUS, StatusCode
 
 kIvSize = 12
 kTagSize = 16
@@ -49,7 +50,7 @@ class AesGcmEncryption:
             print(" bytes, but 32 bytes are required.")
         if ciphertext.size() < kIvSize + kTagSize :
             print( "Ciphertext is too short.")
-            return FCP_STATUS(DATA_LOSS)
+            return FCP_STATUS(StatusCode.DATA_LOSS)
 
         plaintext_buffer ={}
         plaintext_buffer.resize(ciphertext.size() - kIvSize - kTagSize)

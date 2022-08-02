@@ -10,8 +10,9 @@ from .shamir_secret_sharing import ShamirSecretSharing
 kLegacyKeySize = 17
 
 # data: bytes
+kSize = 32
+
 class AesKey:
-    kSize = 32
     
     def __init__(self, data, key_size=kSize):
         self._data = data
@@ -26,7 +27,7 @@ class AesKey:
     def CreateFromShares(self, shares, threshold):
         reconstructor = ShamirSecretSharing()
         key_length = 0
-        for i in range(shares.size()):
+        for i in range(len(shares)):
             if key_length == 0:
                 if shares[i].data.size() == 36:
                     key_length = kSize
