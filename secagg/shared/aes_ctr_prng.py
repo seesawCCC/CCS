@@ -35,12 +35,13 @@ kMaxBlocks = 0xFFFFFFFF
 kAllZeroes = b'\0'*kCacheSize
 
 
-
+from .prng import SecureBatchPrng
 from Crypto.Cipher import AES
 
 # 伪随机数生成器
-class AesCtrPrng:
+class AesCtrPrng(SecureBatchPrng):
     def __init__(self,seed):
+        super().__init__()
         # memset(iv, 0, kIvSize) 此处memset函数初始化iv向量
         iv = [0] * kIvSize
         # 对称加解密函数EVP_CIPHER|EVP_EncryptInit_ex 采用了AES加密的CTR模式
@@ -86,6 +87,9 @@ class AesCtrPrng:
         buffer_size = min(buffer_size, kCacheSize)
         self.GenerateBytes(buffer, buffer_size)
         return buffer_size
+
+    def GetMaxBufferSize(self):
+        return kCacheSize
 
 
 

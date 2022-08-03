@@ -6,10 +6,14 @@
 # @Software: PyCharm
 
 from .aes_ctr_prng import AesCtrPrng
+from .aes_prng_factory import AesPrngFactory
 
-class AesCtrPrngFactory:
-    # def __init__(self):
+class AesCtrPrngFactory(AesPrngFactory):
+    def __init__(self):
+        super().__init__()
 
     def MakePrng(self,key):
-
         return AesCtrPrng(key)
+
+    def SupportsBatchMode(self):
+        return True

@@ -69,6 +69,7 @@ class AesGcmEncryption:
         cipher = AES.new(key, AES.MODE_GCM, nonce=self.nonce)
         try:
             dec_result = cipher.decrypt(data)
+            dec_result = dec_result.decode('ascii')
             # cipher.verify(tag)  此处有一个BUG，MAC验证无法通过
         except Exception as e:
             return e
