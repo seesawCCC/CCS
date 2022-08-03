@@ -12,6 +12,7 @@ from ..shared.secagg_messages import ClientToServerWrapperMessage, PairOfKeyShar
 from ..shared.shamir_secret_sharing import ShamirSecretSharing
 from ..shared.ecdh_keys import EcdhPublicKey
 from ..shared.aes_key import AesKey
+from ..shared.aes_gcm_encryption import AesGcmEncryption
 
 class R1ShareKeysStateDeliveredMessage():
 	def __init__(self, prng, self_prng_key_shares, pairwise_prng_key_shares):

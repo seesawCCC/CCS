@@ -32,13 +32,13 @@ kMaxBlocks = 0xFFFFFFFF
 # After this, the associated next_byte_pos counter must be set to 0.
 
  # This is used to generate bytes.
-kAllZeroes = [0] * kCacheSize
+kAllZeroes = b'\0'*kCacheSize
 
 
 
 from Crypto.Cipher import AES
 
-
+# 伪随机数生成器
 class AesCtrPrng:
     def __init__(self,seed):
         # memset(iv, 0, kIvSize) 此处memset函数初始化iv向量

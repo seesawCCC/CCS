@@ -16,11 +16,11 @@ class AsyncAbort(threading.Thread):
 		self._signal = signal
 		# 使用了读写锁
 		threading.Thread.__init__(self)
-		FCP_CHECK(self._signal)
+		FCP_CHECK(self._signal==[])
 
 	def Abort(self, message):
 		l.writer_lock.acquire()
-		self._signal.apend(message)
+		self._signal.append(message)
 		l.writer_lock.release()
 
 	
@@ -32,4 +32,5 @@ class AsyncAbort(threading.Thread):
 
 	def Message(self):
 		l.reader_lock.acquire()
-		return self._signal
+		return ';'.join(self._signal)
+
