@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-16 19:37:18
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-07-31 00:50:07
+# @Last Modified time: 2022-08-03 12:23:42
 
 from .secagg_client_r1_share_keys_base_state import SecAggClientR1ShareKeysBaseState, R1ShareKeysStateDeliveredMessage
 from .secagg_client_terminal_state import SecAggClientCompletedState, SecAggClientAbortedState
@@ -82,7 +82,7 @@ class SecAggClientR1ShareKeysInputNotSetState(SecAggClientR1ShareKeysCommonState
 	def SetInput(self, input_map):
 		if not self.ValidateInput(input_map, self._input_vector_specs):
 			information = "The input to SetInput does not match the InputVectorSpecification."
-			return FCP_STATUS(INVALID_ARGUMENT, information)
+			return FCP_STATUS(StatusCode.INVALID_ARGUMENT, information)
 		return SecAggClientR1ShareKeysInputSetState(self._max_clients_expected, self._minimum_surviving_clients_for_reconstruction, self._enc_key_agreement, \
 			input_map, self._input_vector_specs, self._prng, self._prng_key_agreement, self._sender, self._transition_listener, self._prng_factory, self._async_abort)
 

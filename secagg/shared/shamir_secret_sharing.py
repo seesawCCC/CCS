@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-22 17:03:02
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-07-30 21:38:39
+# @Last Modified time: 2022-08-02 18:01:33
 
 # Reconstruct返回的StatusOr还没写
 import random
@@ -12,8 +12,9 @@ from .math import MultiplyMod, DivideRoundUp, IntToByteString
 
 kSubsecretSize = 4
 
+
 class ShamirShare():
-	def __init__(self, string=''):
+	def __init__(self, string=b''):
 		self.data = string
 
 class ShamirSecretSharing():

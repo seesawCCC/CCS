@@ -199,7 +199,7 @@ class AdvertiseKeys:
 
 class PairOfPublicKeys:
     def __init__(self, noise_pk='', enc_pk=''):
-        #bytes类型 无符号的一个字节
+        #str类型
         self._noise_pk = noise_pk
         self._enc_pk = noise_pk
 
@@ -222,8 +222,11 @@ class ShareKeysRequest:
         self._extra_data = [] #类型任意
         self._session_id = 0
 
-    def pairs_of_public_keys(self):
-        return self._pairs_of_public_keys
+    def pairs_of_public_keys(self, index=-1):
+        if index < 0:
+            return self._pairs_of_public_keys
+        else:
+            return self._pairs_of_public_keys[index]
 
     def has_pairs_of_public_keys(self):
         return bool(self._pairs_of_public_keys)
@@ -262,8 +265,14 @@ class ShareKeysResponse:
     def __init__(self):
         self._encrypted_key_shares = []
 
-    def encrypted_key_shares(self):
-        return self._encrypted_key_shares
+    def encrypted_key_shares(self, index=-1):
+        if index < 0:
+            return self._encrypted_key_shares
+        else:
+            return self._encrypted_key_shares[index]
+
+    def encrypted_key_shares_size(self):
+        return len(self._encrypted_key_shares)
 
     def set_encrypted_key_shares(self, encrypted_key_shares):
         self._encrypted_key_shares = encrypted_key_shares[:]
@@ -294,8 +303,14 @@ class MaskedInputCollectionRequest:
     def __init__(self):
         self._encrypted_key_shares = []
 
-    def encrypted_key_shares(self):
-        return self._encrypted_key_shares
+    def encrypted_key_shares(self, index=-1):
+        if index < 0:
+            return self._encrypted_key_shares
+        else:
+            return self._encrypted_key_shares[i]
+
+    def encrypted_key_shares_size(self):
+        return len(self._encrypted_key_shares)
 
     def set_encrypted_key_shares(self, encrypted_key_shares):
         self._encrypted_key_shares = encrypted_key_shares[:]

@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-15 19:51:35
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-07-28 16:26:26
+# @Last Modified time: 2022-08-03 12:22:53
 
 # 等待具体实现时再来重新修改keys.enc_pk()这方面的东西
 from .client_state import ClientState, OtherClientState
@@ -10,7 +10,7 @@ from .secagg_client_alive_base_state import SecAggClientAliveBaseState
 from ..shared import compute_session_id
 from ..shared.secagg_messages import ClientToServerWrapperMessage, PairOfKeyShares
 from ..shared.shamir_secret_sharing import ShamirSecretSharing
-from ..shared.ecdh_keys import EcdhPublicKey
+from ..shared.ecdh_key_agreement import EcdhPublicKey
 from ..shared.aes_key import AesKey
 
 class R1ShareKeysStateDeliveredMessage():
@@ -78,7 +78,7 @@ class SecAggClientR1ShareKeysBaseState(SecAggClientAliveBaseState):
 				return False
 			else:
 				enc_pk = EcdhPublicKey(keys.enc_pk()) 
-				prng_pk = EcdhPublicKey(keys.prng_pk())
+				prng_pk = EcdhPublicKey(keys.noise_pk())
 				if enc_pk == self_enc_public_key and prng_pk == self_prng_public_key:
 					if client_id_set:
 						r1_delivered_message.error_message = "Found this client's keys in the ShareKeysRequest twice somehow."
