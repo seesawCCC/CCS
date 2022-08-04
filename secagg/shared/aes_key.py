@@ -16,13 +16,16 @@ class AesKey:
 
     kSize = 32
 
-    def __init__(self, data, key_size=kSize):
+    def __init__(self, data=b'', key_size=kSize):
         self._data = data
         self._key_size = key_size
         FCP_CHECK((key_size > 0 and key_size <= 17) or (key_size == 32))
 
     def data(self):
         return self._data
+
+    def size(self):
+        return len(self._data)
 
 
     def CreateFromShares(self, shares, threshold):
@@ -53,5 +56,6 @@ class AesKey:
                 reconstructed = reconstructed[index:]
                 key_length = key_length - index
 
-        return AesKey(reconstructed.encode('ascii'),key_length)
+        # return AesKey(reconstructed.encode('utf-8'),key_length)
+        return AesKey(reconstructed, key_length)
 

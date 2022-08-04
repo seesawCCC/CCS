@@ -5,6 +5,8 @@
 # @File : secagg_client_r2_masked_input_coll_input_set_state.py
 # @Software: PyCharm
 
+from base.monitoring import FCP_CHECK
+
 from .secagg_client_r2_masked_input_coll_base_state import SecAggClientR2MaskedInputCollBaseState
 from .secagg_client_state import SecAggClientState
 from .secagg_client_terminal_state import SecAggClientCompletedState
@@ -30,8 +32,7 @@ class SecAggClientR2MaskedInputCollInputSetState(SecAggClientR2MaskedInputCollBa
         self.self_prng_key = self_prng_key
         self.session_id = session_id
         self.prng_factory = prng_factory
-        if self.client_id >= 0:
-            print("Client id must not be negative but was "+self.client_id)
+        FCP_CHECK(self.client_id >= 0, "Client id must not be negative but was {}".format(self.client_id))
 
 
     def HandleMessage(self,message):

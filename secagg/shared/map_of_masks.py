@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-30 15:50:40
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-08-02 15:51:38
+# @Last Modified time: 2022-08-04 13:09:13
 import hashlib
 
 import secagg.shared.math as math
@@ -22,7 +22,7 @@ def DigestKey(prng_input, bit_width, prng_key):
 	input_size_bytes = math.IntToByteString(input_size) 
 	bit_width_bytes = math.IntToByteString(bit_width)
 	if not isinstance(prng_input, bytes):
-		prng_input = prng_input.encode('ascii')
+		prng_input = prng_input.encode('utf-8')
 	hsobj = hashlib.sha256()
 	hsobj.update(bit_width_bytes)
 	hsobj.update(prng_key.data())
@@ -73,6 +73,7 @@ class PrngBuffer():
 		  self._buffer_ptr = 0
 		  FCP_CHECK(not self._buffer_end%bytes_per_output, "PRNG buffer size must be a multiple bytes_per_output.")
 		  self._FillBuffer()
+		  # print(self._prng)
 	
 	def NextMask(self):
 		if self._buffer_ptr == self._buffer_end:
@@ -83,14 +84,17 @@ class PrngBuffer():
 			output <<= 8
 			output |= self._buffer[self._buffer_ptr]
 			self._buffer_ptr += 1
+		# print(output)
 		return output
 
 	def _buffer_size(self):
 		return len(self._buffer)
 
 	def _FillBuffer(self):
+		# print('before fill ', self._buffer)
 		self._buffer_ptr = 0
-		FCP_CHECK(self._prng.RandBuffer(self._buffer, self._buffer_size()) == self.buffer_size())
+		FCP_CHECK(self._prng.RandBuffer(self._buffer, self._buffer_size()) == self._buffer_size())
+		# print('after fill ', self._buffer)
 
 
 class AddModAdapter():
@@ -106,6 +110,7 @@ class AddModAdapter():
 		return math.SubtractModOpt(a, b, z)
 
 def MapOfMasksImpl(prng_keys_to_add, prng_keys_to_subtract, input_vector_specs, session_id, prng_factory, async_abort, rt_class):
+	# print(prng_keys_to_add, prng_keys_to_subtract, input_vector_specs, session_id, prng_factory)
 	FCP_CHECK(prng_factory.SupportsBatchMode())
 
 	map_of_masks = SecAggVectorMap()
@@ -113,7 +118,7 @@ def MapOfMasksImpl(prng_keys_to_add, prng_keys_to_subtract, input_vector_specs, 
 		if async_abort and async_abort.Signalled():
 			return None
 		bit_width = math.BitWidth(vector_spec.modulus()-1)
-		prng_input = session_id.data.encode('ascii')+math.IntToByteString(bit_width)+math.IntToByteString(vector_spec.length())+vector_spec.name().encode('ascii')
+		prng_input = session_id.data.encode('utf-8')+math.IntToByteString(bit_width)+math.IntToByteString(vector_spec.length())+vector_spec.name().encode('utf-8')
 		mask_vector_buffer = [0]*vector_spec.length()
 
 		modulus_is_power_of_two = (1<<bit_width == vector_spec.modulus())
@@ -126,6 +131,7 @@ def MapOfMasksImpl(prng_keys_to_add, prng_keys_to_subtract, input_vector_specs, 
 				if async_abort and async_abort.Signalled():
 					return None
 				digest_key = DigestKey(prng_input, bit_width, prng_key)
+				# print(prng_key.data(), digest_key.data())
 				prng = PrngBuffer(prng_factory.MakePrng(digest_key), msb_mask, bytes_per_output)
 				for i in range(len(mask_vector_buffer)):
 					mask_vector_buffer[i] = AddModAdapter.AddModImpl(mask_vector_buffer[i], prng.NextMask(), vector_spec.modulus())
@@ -134,6 +140,7 @@ def MapOfMasksImpl(prng_keys_to_add, prng_keys_to_subtract, input_vector_specs, 
 				if async_abort and async_abort.Signalled():
 					return None
 				digest_key = DigestKey(prng_input, bit_width, prng_key)
+				# print(prng_key.data(), digest_key.data())
 				prng = PrngBuffer(prng_factory.MakePrng(digest_key), msb_mask, bytes_per_output)
 				for i in range(len(mask_vector_buffer)):
 					mask_vector_buffer[i] = AddModAdapter.SubtractModImpl(mask_vector_buffer[i], prng.NextMask(), vector_spec.modulus())
@@ -149,6 +156,7 @@ def MapOfMasksImpl(prng_keys_to_add, prng_keys_to_subtract, input_vector_specs, 
 				if async_abort and async_abort.Signalled():
 					return None
 				digest_key = DigestKey(prng_input, sample_bits, prng_key)
+				# print(prng_key.data(), digest_key.data())
 				prng = PrngBuffer(prng_factory.MakePrng(digest_key), msb_mask, bytes_per_output)
 				i = 0
 				while i < vector_spec.length():
@@ -163,6 +171,7 @@ def MapOfMasksImpl(prng_keys_to_add, prng_keys_to_subtract, input_vector_specs, 
 				if async_abort and async_abort.Signalled():
 					return None
 				digest_key = DigestKey(prng_input, sample_bits, prng_key)
+				# print(prng_key.data(), digest_key.data())
 				prng = PrngBuffer(prng_factory.MakePrng(digest_key), msb_mask, bytes_per_output)
 				i = 0
 				while i < vector_spec.length():
@@ -179,7 +188,7 @@ def MapOfMasksImpl(prng_keys_to_add, prng_keys_to_subtract, input_vector_specs, 
 	return map_of_masks 
 
 def MapOfMasks(prng_keys_to_add, prng_keys_to_subtract, input_vector_specs, session_id, prng_factory, async_abort):
-	MapOfMasksImpl(prng_keys_to_add, prng_keys_to_subtract, input_vector_specs, session_id, prng_factory, async_abort, rt_class=AddModAdapter)
+	return MapOfMasksImpl(prng_keys_to_add, prng_keys_to_subtract, input_vector_specs, session_id, prng_factory, async_abort, rt_class=AddModAdapter)
 
 # def MapOfMasksV3(prng_keys_to_add, prng_keys_to_subtract, input_vector_specs, session_id, prng_factory, async_abort):
 # 	MapOfMasksImpl(prng_keys_to_add, prng_keys_to_subtract, input_vector_specs, session_id, prng_factory, async_abort, rt_class=AddModOptAdapter)

@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-15 19:51:35
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-08-03 12:22:53
+# @Last Modified time: 2022-08-04 13:57:30
 
 # 等待具体实现时再来重新修改keys.enc_pk()这方面的东西
 from .client_state import ClientState, OtherClientState
@@ -34,6 +34,7 @@ class SecAggClientR1ShareKeysBaseState(SecAggClientAliveBaseState):
 
 	def SetUpShares(self, threshold, n, agreement_key, self_prng_key, self_prng_key_shares, pairwise_prng_key_shares):
 		if not pairwise_prng_key_shares and not self_prng_key_shares:
+			self_prng_key = self_prng_key.data()
 			sharer = ShamirSecretSharing()
 			pairwise_prng_key_shares.extend(sharer.Share(threshold, n, agreement_key))
 			self_prng_key_shares.extend(sharer.Share(threshold, n, self_prng_key))

@@ -6,6 +6,7 @@
 # @Software: PyCharm
 
 # 重写secagg_messages.proto
+import pickle
 
 class ClientToServerWrapperMessage:
     def __init__(self):
@@ -198,10 +199,10 @@ class AdvertiseKeys:
         return self.pair_of_public_keys()
 
 class PairOfPublicKeys:
-    def __init__(self, noise_pk='', enc_pk=''):
+    def __init__(self, noise_pk=b'', enc_pk=b''):
         #str类型
         self._noise_pk = noise_pk
-        self._enc_pk = noise_pk
+        self._enc_pk = enc_pk
 
     def noise_pk(self):
         return self._noise_pk
@@ -282,9 +283,9 @@ class ShareKeysResponse:
 
 
 class PairOfKeyShares:
-    def __init__(self):
-        self._noise_sk_share = 0
-        self._prf_sk_share = 0
+    def __init__(self, noise_sk_share=b'', prf_sk_share=b''):
+        self._noise_sk_share = noise_sk_share
+        self._prf_sk_share = prf_sk_share
 
     def noise_sk_share(self):
         return self._noise_sk_share
@@ -298,6 +299,8 @@ class PairOfKeyShares:
     def set_prf_sk_share(self, prf_sk_share):
         self._prf_sk_share = prf_sk_share
 
+    def SerializeAsString(self):
+        return pickle.dumps(self)
 
 class MaskedInputCollectionRequest:
     def __init__(self):
