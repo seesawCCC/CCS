@@ -34,9 +34,9 @@ kMaxBlocks = 0xFFFFFFFF
  # This is used to generate bytes.
 kAllZeroes = b'\0'*kCacheSize
 
-
 from .prng import SecureBatchPrng
 from Crypto.Cipher import AES
+import os
 
 # 伪随机数生成器
 class AesCtrPrng(SecureBatchPrng):
@@ -44,13 +44,15 @@ class AesCtrPrng(SecureBatchPrng):
         super().__init__()
         # memset(iv, 0, kIvSize) 此处memset函数初始化iv向量
         iv = [0] * kIvSize
+        iv = os.urandom(32)
         # 对称加解密函数EVP_CIPHER|EVP_EncryptInit_ex 采用了AES加密的CTR模式
         # FCP_CHECK(ctx_ = EVP_CIPHER_CTX_new());
         # FCP_CHECK(1 == EVP_EncryptInit_ex(ctx_, EVP_aes_256_ctr(), nullptr, seed.data(), iv));
-        self.aes = AES.new(seed.data(),AES.MODE_GCM)
+        self.aes = AES.new(seed.data(),AES.MODE_ECB)
         self.next_byte_pos = kCacheSize
         self.blocks_generated = 0
         self.cache = [0]* kCacheSize
+
 
     def GenerateBytes(self,cache,cache_size):
         if (cache_size % kBlockSize) != 0 :
@@ -63,11 +65,6 @@ class AesCtrPrng(SecureBatchPrng):
         enc = self.aes.encrypt(k)
         cache.clear()
         cache.extend(enc)
-        print(cache)
-        # self.aes.update(kAllZeroes)
-        # FCP_CHECK(
-        #     EVP_EncryptUpdate(ctx_, cache, &bytes_written, kAllZeroes, cache_size));
-        # FCP_CHECK(bytes_written == cache_size);
         self.blocks_generated = self.blocks_generated + (cache_size) / kBlockSize
 
     def Rand8(self):
