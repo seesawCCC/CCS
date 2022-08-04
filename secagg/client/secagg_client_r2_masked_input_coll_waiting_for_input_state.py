@@ -4,7 +4,7 @@
 # @Site : 
 # @File : secagg_client_r2_masked_input_coll_waiting_for_input_state.py
 # @Software: PyCharm
-
+from base.monitoring import FCP_CHECK, StatusWarp, StatusCode
 from .secagg_client_r2_masked_input_coll_base_state import SecAggClientR2MaskedInputCollBaseState
 from .secagg_client_state import SecAggClientState
 from .secagg_client_terminal_state import SecAggClientCompletedState
@@ -25,32 +25,33 @@ class SecAggClientR2MaskedInputCollWaitingForInputState(SecAggClientR2MaskedInpu
         self.other_client_states = other_client_states
         self.pairwise_key_shares = pairwise_key_shares
         self.self_key_shares = self_key_shares
-        if self.client_id >= 0:
-            print("Client id must not be negative but was "+self.client_id)
+        FCP_CHECK(self.client_id >= 0, "Client id must not be negative but was {}".format(self.client_id))
 
+    @StatusWarp
     def HandleMessage(self,message):
         # Handle abort messages only
         if message.has_abort():
             if message.abort().early_success():
-                return SecAggClientCompletedState(self.sender, self.transition_listener)
+                return SecAggClientCompletedState(self._sender, self._transition_listener)
             else:
-                return SecAggClientAbortedState("Aborting because of abort message from the server.",self.sender, self.transition_listener)
+                return SecAggClientAbortedState("Aborting because of abort message from the server.",self._sender, self._transition_listener)
         else:
             # Returns an error indicating that the message is of invalid type
-            return SecAggClientState.HandleMessage(message)
+            return super().HandleMessage(message)
 
+    @StatusWarp
     def SetInput(self,input_map):
         # Only need to do 3 things: Validate input, send message to server, and
         # return the new state.
-        if SecAggClientState.ValidateInput(input_map, self.input_vector_specs) is False:
-            return FCP_STATUS(INVALID_ARGUMENT)
+        if self.ValidateInput(input_map, self.input_vector_specs) is False:
+            return FCP_STATUS(StatusCode.INVALID_ARGUMENT)
             # "The input to SetInput does not match the InputVectorSpecification."
 
         self.SendMaskedInput(input_map,self.map_of_masks)
 
         return SecAggClientR3UnmaskingState(self.client_id,self.number_of_alive_clients, self.minimum_surviving_clients_for_reconstruction,
                                             self.number_of_clients, self.other_client_states, self.pairwise_key_shares,
-                                            self.self_key_shares, self.sender, self.transition_listener, self.async_abort)
+                                            self.self_key_shares, self._sender, self._transition_listener, self._async_abort)
 
     def StateName(self):
         return "R2_MASKED_INPUT_COLL_WAITING_FOR_INPUT"

@@ -8,6 +8,7 @@
 from .secagg_client_alive_base_state import SecAggClientAliveBaseState
 from .client_state import OtherClientState, ClientState
 from ..shared.secagg_vector import SecAggVector
+from ..shared.map_of_masks import MapOfMasks
 from ..shared.aes_gcm_encryption import AesGcmEncryption
 
 class SecAggClientR2MaskedInputCollBaseState(SecAggClientAliveBaseState):
@@ -27,27 +28,27 @@ class SecAggClientR2MaskedInputCollBaseState(SecAggClientAliveBaseState):
         decryptor = AesGcmEncryption()
         plaintext = ""
         for i in range(number_of_clients):
-            if self.async_abort and self.async_abort.Signalled():
-                error_message = self.async_abort.Message()
+            if self._async_abort and self._async_abort.Signalled():
+                error_message = self._async_abort.Message()
                 return None
 
             if i == client_id :
                 # this client
-                pairwise_key_shares.push_back({" "})
-                self_key_shares.push_back(own_self_key_share)
+                pairwise_key_shares.append('')
+                self_key_shares.append(own_self_key_share)
             elif other_client_states[i] != OtherClientState.kAlive:
                 if len(request.encrypted_key_shares(i)) > 0:
                     # A client who was considered aborted sent key shares.
                     error_message = "Received encrypted key shares from an aborted client."
                     return None
                 else:
-                    pairwise_key_shares.push_back({" "})
-                    self_key_shares.push_back({" "})
+                    pairwise_key_shares.append('')
+                    self_key_shares.append('')
             elif len(request.encrypted_key_shares(i)) == 0:
                 # A client who was considered alive dropped out. Mark it as dead.
                 other_client_states[i] = OtherClientState.kDeadAtRound2
-                pairwise_key_shares.push_back({" "})
-                self_key_shares.push_back({" "})
+                pairwise_key_shares.append('')
+                self_key_shares.append('')
                 number_of_alive_clients = number_of_alive_clients-1
             else:
                 # A living client sent encrypted key shares, so we decrypt and store them.
@@ -88,13 +89,13 @@ class SecAggClientR2MaskedInputCollBaseState(SecAggClientAliveBaseState):
             else:
                 prng_keys_to_subtract.push_back(other_client_prng_keys[i])
 
-        map = SecAggVectorMap.MapOfMasks(prng_keys_to_add, prng_keys_to_subtract, input_vector_specs,
+        map_ = MapOfMasks(prng_keys_to_add, prng_keys_to_subtract, input_vector_specs,
                session_id, prng_factory, self.async_abort)
 
-        if map is False:
-            error_message = self.async_abort.Message()
+        if map_ is False:
+            error_message = self._async_abort.Message()
             return None
-        return map
+        return map_
 
     # 返回SecAggVector对象
     def AddSecAggVectors(self, v1, v2):
@@ -125,7 +126,7 @@ class SecAggClientR2MaskedInputCollBaseState(SecAggClientAliveBaseState):
             sum_vec_proto.set_encoded_vector(sum.TakePackedBytes())
             (to_send.mutable_masked_input_response().mutable_vectors())[pair.first] = sum_vec_proto;
 
-        self.sender.Send(to_send)
+        self._sender.Send(to_send)
 
         return None
 

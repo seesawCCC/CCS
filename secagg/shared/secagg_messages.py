@@ -310,7 +310,7 @@ class MaskedInputCollectionRequest:
         if index < 0:
             return self._encrypted_key_shares
         else:
-            return self._encrypted_key_shares[i]
+            return self._encrypted_key_shares[index]
 
     def encrypted_key_shares_size(self):
         return len(self._encrypted_key_shares)

@@ -5,7 +5,7 @@
 # @File : secagg_client_r2_masked_input_coll_input_set_state.py
 # @Software: PyCharm
 
-from base.monitoring import FCP_CHECK
+from base.monitoring import FCP_CHECK, StatusWarp
 
 from .secagg_client_r2_masked_input_coll_base_state import SecAggClientR2MaskedInputCollBaseState
 from .secagg_client_state import SecAggClientState
@@ -35,6 +35,7 @@ class SecAggClientR2MaskedInputCollInputSetState(SecAggClientR2MaskedInputCollBa
         FCP_CHECK(self.client_id >= 0, "Client id must not be negative but was {}".format(self.client_id))
 
 
+    @StatusWarp
     def HandleMessage(self,message):
         if message.has_abort() :
             if message.abort().early_success():
@@ -46,14 +47,14 @@ class SecAggClientR2MaskedInputCollInputSetState(SecAggClientR2MaskedInputCollBa
             return SecAggClientState.HandleMessage(message)
         request = message.masked_input_request()
         error_message = ''
-        pairwise_key_shares = {}
-        self_key_shares = {}
+        pairwise_key_shares = []
+        self_key_shares = []
 
-        map_of_masks = SecAggVectorMap.HandleMaskedInputCollectionRequest(request, self.client_id, self.input_vector_specs,
+        map_of_masks = self.HandleMaskedInputCollectionRequest(request, self.client_id, self.input_vector_specs,
                                                                           self.minimum_surviving_clients_for_reconstruction, self.number_of_clients,
                                                                           self.other_client_enc_keys, self.other_client_prng_keys,
                                                                           self.own_self_key_share, self.self_prng_key, self.session_id, self.prng_factory,
-                                                                          self.number_of_alive_clients, self.other_client_states.get(), pairwise_key_shares.get(), self_key_shares.get(), error_message)
+                                                                          self.number_of_alive_clients, self.other_client_states, pairwise_key_shares, self_key_shares, error_message)
         if map_of_masks is False:
             return SecAggClientAliveBaseState.AbortAndNotifyServer(error_message)
 
