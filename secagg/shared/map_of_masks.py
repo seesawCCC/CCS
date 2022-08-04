@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-30 15:50:40
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-07-31 23:13:12
+# @Last Modified time: 2022-08-02 15:51:38
 import hashlib
 
 import secagg.shared.math as math
@@ -176,7 +176,7 @@ def MapOfMasksImpl(prng_keys_to_add, prng_keys_to_subtract, input_vector_specs, 
 		if async_abort and async_abort.Signalled():
 			return None
 		map_of_masks[vector_spec.name()] = SecAggVector(mask_vector_buffer, vector_spec.modulus())
-	return map_of_masks
+	return map_of_masks 
 
 def MapOfMasks(prng_keys_to_add, prng_keys_to_subtract, input_vector_specs, session_id, prng_factory, async_abort):
 	MapOfMasksImpl(prng_keys_to_add, prng_keys_to_subtract, input_vector_specs, session_id, prng_factory, async_abort, rt_class=AddModAdapter)

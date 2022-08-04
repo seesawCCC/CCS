@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-19 18:10:57
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-07-31 10:24:52
+# @Last Modified time: 2022-08-02 16:55:04
 
 # FCP_CHECK到时用一个Logger代替算了
 
@@ -284,7 +284,7 @@ class SecAggUnpackedVectorMap(dict):
 			plus_value = other.get(key, None)
 			if plus_value is None:
 				raise Exception("other SecAggVectorMap must have the same key {}".format(key))
-			value.add(plus_value)
+			value.Add(plus_value)
 
 
 class SecAggUnpackedVector(list):
@@ -294,7 +294,7 @@ class SecAggUnpackedVector(list):
 		if isinstance(first_arg, int):
 			init_list = [0]*first_arg
 		elif isinstance(first_arg, list):
-			init_list = first_arg
+			init_list = first_arg[:]
 		elif isinstance(first_arg, SecAggVector):
 			self._modulus = first_arg.modulus()
 			num_elements = first_arg.num_elements()
@@ -303,7 +303,7 @@ class SecAggUnpackedVector(list):
 			for i in range(num_elements):
 				init_list[i] = decoder.ReadValue()
 		elif isinstance(first_arg, type(self)):
-			init_list = first_arg
+			init_list = first_arg[:]
 			self._modulus = first_arg._modulus
 			first_arg._modulus = 0
 		super().__init__(init_list)

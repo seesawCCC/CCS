@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-11 21:21:18
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-07-28 16:26:33
+# @Last Modified time: 2022-08-03 00:44:59
 
 from .secagg_client_alive_base_state import SecAggClientAliveBaseState
 from .secagg_client_terminal_state import SecAggClientCompletedState, SecAggClientAbortedState
@@ -33,7 +33,7 @@ class SecAggClientR0AdvertiseKeysBaseState(SecAggClientAliveBaseState):
 		public_keys.set_enc_pk(enc_key_agreement.PublicKey().AsString())
 		public_keys.set_noise_pk(prng_key_agreement.PublicKey().AsString())
 		self._sender.Send(message)
-		return self._next_Rstate()
+		return self._next_Rstate(enc_key_agreement, prng_key_agreement)
 
 	@StatusWarp
 	def HandleMessage(self, message):
@@ -71,7 +71,7 @@ class SecAggClientR0AdvertiseKeysInputNotSetState(SecAggClientR0AdvertiseKeysBas
 
 	def _next_Rstate(self, enc_key_agreement, prng_key_agreement):
 		return SecAggClientR1ShareKeysInputNotSetState(self._max_clients_expected, self._minimum_surviving_clients_for_reconstruction,\
-					enc_key_agreement, self._input_map, self._input_vector_specs, self._prng, prng_key_agreement, self._sender, self._transition_listener, self._prng_factory, self._async_abort)
+					enc_key_agreement, self._input_vector_specs, self._prng, prng_key_agreement, self._sender, self._transition_listener, self._prng_factory, self._async_abort)
 
 	@StatusWarp
 	def SetInput(self, input_map):
