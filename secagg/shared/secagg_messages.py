@@ -383,7 +383,7 @@ class UnmaskingResponse:
     def mutable_noise_or_prf_key_shares(self):
         return self.noise_or_prf_key_shares()
 
-    def add_noise_or_prf_key_shares(self, item):
+    def add_noise_or_prf_key_shares(self, item=b''):
         self._noise_or_prf_key_shares.append(item)
 
 
