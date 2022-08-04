@@ -6,13 +6,13 @@
 # @Software: PyCharm
 
 from .secagg_client_alive_base_state import SecAggClientAliveBaseState
-from .client_state import OtherClientState
+from .client_state import OtherClientState, ClientState
 from ..shared.secagg_vector import SecAggVector
 from ..shared.aes_gcm_encryption import AesGcmEncryption
 
 class SecAggClientR2MaskedInputCollBaseState(SecAggClientAliveBaseState):
     def __init__(self, sender, transition_listener, async_abort):
-        super().__init__(sender, transition_listener, async_abort)
+        super().__init__(sender, transition_listener, ClientState.R2_MASKED_INPUT, async_abort)
 
     # 返回SecAggVectorMap对象
     def HandleMaskedInputCollectionRequest(self, request, client_id,input_vector_specs, minimum_surviving_clients_for_reconstruction, number_of_clients,

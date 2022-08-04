@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-29 20:02:55
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-08-02 15:14:12
+# @Last Modified time: 2022-08-04 18:40:03
 
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -15,8 +15,9 @@ from .aes_key import AesKey
 class EcdhPrivateKey():
 
 	@staticmethod
-	def LoadFromString(private_key_str, password=''):
-		private_key_bytes = private_key_str.encode('ascii')
+	def LoadFromString(private_key_str, password=b''):
+		# private_key_bytes = private_key_str.encode('utf-8')
+		private_key_bytes = private_key_str
 		private_key = serialization.load_pem_private_key(private_key_bytes, password)
 		return EcdhPrivateKey(private_key, password)
 
@@ -27,12 +28,13 @@ class EcdhPrivateKey():
 	def PublicKey(self):
 		return EcdhPublicKey(self._private_key.public_key())
 
-	# 返回unicode
+	# 返回bytes
 	# 编码PEM, 格式PrivateFormat.PKCS8 
 	# https://cryptography.io/en/latest/hazmat/primitives/asymmetric/ec/?highlight=encryption_algorithm#serialization
 	def AsString(self):
 		seria_private_key = self._private_key.private_bytes(encoding=serialization.Encoding.PEM, format=serialization.PrivateFormat.PKCS8, encryption_algorithm=serialization.BestAvailableEncryption(self._password))
-		return seria_private_key.decode('ascii')
+		# return seria_private_key.decode('utf-8')
+		return seria_private_key
 
 	# return bytes string
 	def ComputeSharedSecret(self, other_pbk):
@@ -41,16 +43,20 @@ class EcdhPrivateKey():
 		return derived_key
 
 class EcdhPublicKey():
+	kSize = 178
 
 	@staticmethod
 	def LoadFromString(public_key_str):
-		public_key_bytes = public_key_str.encode('ascii')
+		# public_key_bytes = public_key_str.encode('utf-8')
+		public_key_bytes = public_key_str
 		public_key =  serialization.load_pem_public_key(public_key_bytes)
 		return EcdhPublicKey(public_key)
 
 	def __init__(self, public_key):
-		if isinstance(public_key, str):
-			public_key_bytes = public_key.encode('ascii')
+		# if isinstance(public_key, str):
+		if isinstance(public_key, bytes):
+			# public_key_bytes = public_key.encode('utf-8')
+			public_key_bytes = public_key
 			public_key =  serialization.load_pem_public_key(public_key_bytes)
 		self._public_key = public_key
 
@@ -59,7 +65,8 @@ class EcdhPublicKey():
 
 	def AsString(self):
 		public_bytes = self._public_key.public_bytes(encoding=serialization.Encoding.PEM, format=serialization.PublicFormat.SubjectPublicKeyInfo)
-		return public_bytes.decode('ascii')
+		# return public_bytes.decode('utf-8')
+		return public_bytes
 
 	def __eq__(self, other_pk):
 		return self.AsString() == other_pk.AsString()

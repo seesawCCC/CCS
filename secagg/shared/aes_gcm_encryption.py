@@ -33,7 +33,8 @@ class AesGcmEncryption:
         iv = [0]*kIvSize
         # 设置为byte类型
         key = key.data()
-        text = plaintext.encode('utf-8')
+        # text = plaintext.encode('utf-8')
+        text = plaintext
         # 初始化加密器
         cipher = AES.new(key, AES.MODE_GCM)
         # 加密
@@ -69,7 +70,7 @@ class AesGcmEncryption:
         cipher = AES.new(key, AES.MODE_GCM, nonce=self.nonce)
         try:
             dec_result = cipher.decrypt(data)
-            dec_result = dec_result.decode('ascii')
+            # dec_result = dec_result.decode('utf-8')
             # cipher.verify(tag)  此处有一个BUG，MAC验证无法通过
         except Exception as e:
             return e

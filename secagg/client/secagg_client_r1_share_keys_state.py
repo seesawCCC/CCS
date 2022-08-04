@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-16 19:37:18
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-08-03 12:23:42
+# @Last Modified time: 2022-08-04 14:20:17
 
 from .secagg_client_r1_share_keys_base_state import SecAggClientR1ShareKeysBaseState, R1ShareKeysStateDeliveredMessage
 from .secagg_client_terminal_state import SecAggClientCompletedState, SecAggClientAbortedState
@@ -48,7 +48,7 @@ class SecAggClientR1ShareKeysCommonState(SecAggClientR1ShareKeysBaseState):
 		success = self.HandleShareKeysRequest(message.share_keys_request(), self._enc_key_agreement, self._max_clients_expected, self._minimum_surviving_clients_for_reconstruction, self._prng_key_agreement, self_prng_key, r1_delivered_message) 
 		if not success:
 			return self.AbortAndNotifyServer(r1_delivered_message.error_message)
-		if not self.EncryptAndSendResponse(r1_delivered_message.other_client_enc_keys, self._pairwise_prng_key_shares, self._self_prng_key_shares, self._sender.get()):
+		if not self.EncryptAndSendResponse(r1_delivered_message.other_client_enc_keys, self._pairwise_prng_key_shares, self._self_prng_key_shares, self._sender):
 			return  self.AbortAndNotifyServer(self._async_abort.Message())
 		
 		own_self_key_share = self._self_prng_key_shares[r1_delivered_message.client_id]
@@ -68,8 +68,8 @@ class SecAggClientR1ShareKeysInputSetState(SecAggClientR1ShareKeysCommonState):
 		return "R1_SHARE_KEYS_INPUT_SET"
 
 	def _next_Rstate(self, r1_delivered_message, own_self_key_share, self_prng_key):
-		return SecAggClientR2MaskedInputCollInputSetState(r1_delivered_message.client_id, self._minimum_surviving_clients_for_reconstruction, r1_delivered_message.number_of_alive_clients, r1_delivered_message.number_of_clients, \
-			self._input_map, self._input_vector_specs, r1_delivered_message.other_client_states, r1_delivered_message.other_client_enc_keys, r1_delivered_message.other_client_prng_keys, own_self_key_share, self_prng_key, self._sender, \
+		return SecAggClientR2MaskedInputCollInputSetState(r1_delivered_message.client_id, self._minimum_surviving_clients_for_reconstruction, r1_delivered_message.number_of_alive_clients, r1_delivered_message.number_of_clients,
+			self._input_map, self._input_vector_specs, r1_delivered_message.other_client_states, r1_delivered_message.other_client_enc_keys, r1_delivered_message.other_client_prng_keys, own_self_key_share, self_prng_key, self._sender,
 			self._transition_listener, r1_delivered_message.session_id, self._prng_factory, self._async_abort)
 
 class SecAggClientR1ShareKeysInputNotSetState(SecAggClientR1ShareKeysCommonState):
@@ -90,6 +90,6 @@ class SecAggClientR1ShareKeysInputNotSetState(SecAggClientR1ShareKeysCommonState
 		return "R1_SHARE_KEYS_INPUT_NOT_SET"
 
 	def _next_Rstate(self, r1_delivered_message, own_self_key_share, self_prng_key):
-		return SecAggClientR2MaskedInputCollInputNotSetState(r1_delivered_message.client_id, self._minimum_surviving_clients_for_reconstruction, r1_delivered_message.number_of_alive_clients, r1_delivered_message.number_of_clients, \
-			self._input_vector_specs, r1_delivered_message.other_client_states, r1_delivered_message.other_client_enc_keys, r1_delivered_message.other_client_prng_keys, own_self_key_share, self_prng_key, self._sender, \
+		return SecAggClientR2MaskedInputCollInputNotSetState(r1_delivered_message.client_id, self._minimum_surviving_clients_for_reconstruction, r1_delivered_message.number_of_alive_clients, r1_delivered_message.number_of_clients,
+			self._input_vector_specs, r1_delivered_message.other_client_states, r1_delivered_message.other_client_enc_keys, r1_delivered_message.other_client_prng_keys, own_self_key_share, self_prng_key, self._sender,
 			self._transition_listener, r1_delivered_message.session_id, self._prng_factory, self._async_abort)

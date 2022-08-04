@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-22 17:03:02
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-08-02 18:01:33
+# @Last Modified time: 2022-08-04 13:14:01
 
 # Reconstruct返回的StatusOr还没写
 import random
@@ -28,7 +28,8 @@ class ShamirSecretSharing():
 		self._last_lc_output = []
 
 	def Share(self, threshold, num_shares, to_share):
-		if not isinstance(to_share, str):
+		# if not isinstance(to_share, str):
+		if not isinstance(to_share, bytes):
 			to_share = to_share.AsString()
 		assert len(to_share), "to_share must not be empty"
 		assert num_shares > 1, "num_shares must be greater than 1"
@@ -163,8 +164,8 @@ class ShamirSecretSharing():
 				secret[i] <<= 8-bits_done
 				secret[i] |= next_low_bits
 			i -= 1
-		secret = [chr(item) for item in secret]
-		return ''.join(secret)
+		secret = [chr(item).encode('utf8') for item in secret]
+		return b''.join(secret)
 
 	def _RandomFieldElement(self):
 		rand = 0

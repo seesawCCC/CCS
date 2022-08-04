@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-29 18:14:46
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-07-29 22:13:07
+# @Last Modified time: 2022-08-04 11:26:24
 
 import hmac, hashlib, base64
 from .math import IntToByteString
@@ -11,7 +11,7 @@ from base.monitoring import FCP_CHECK
 kSha256Length = 32
 
 class SessionId():
-	def __init__(self, data):
+	def __init__(self, data=''):
 		self.data = data
 
 # request: ShareKeysRequest 

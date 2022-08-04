@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-19 15:24:50
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-07-31 19:50:18
+# @Last Modified time: 2022-08-04 11:47:35
 
 import struct
 import random
@@ -12,7 +12,7 @@ def RandomString(length=12):
 		return b'default password'
 	string_list = []
 	for i in range(length):
-		string_list.append(chr(random.randint(33, 126)).encode('ascii'))
+		string_list.append(chr(random.randint(33, 126)).encode('utf-8'))
 	return b''.join(string_list)
 
 class ArgumentTypeException(Exception):
