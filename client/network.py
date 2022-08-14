@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-08-12 21:30:31
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-08-13 22:44:18
+# @Last Modified time: 2022-08-14 17:31:38
 
 import socket
 import traceback
@@ -10,10 +10,11 @@ import json
 import threading
 import random
 import hashlib
+import select
 
 from base.monitoring import FCP_CHECK
 from base.rsa_encryption import RsaEncryption
-from .aes_gcm_encryption import AesGcmEncryption
+from secagg.shared.aes_gcm_encryption import AesGcmEncryption
 
 class ServerAddr():
 	def __init__(self, register_ip, register_port):
@@ -154,11 +155,12 @@ class Network():
 		if not self._connect_server_socket:
 			return False
 		listen_thread = threading.Thread(target=self._listen_to_server)
-		nsing_thread.start()
+		listen_thread.start()
+		return True
 
 	def _listen_to_server(self):
 		inputs = [self._connect_server_socket]
-		outpus = []
+		outputs = []
 		excepts = [self._connect_server_socket]
 		need_closed = []
 
@@ -189,12 +191,13 @@ class Network():
 				inputs.remove(sock)
 				need_closed.append(sock)
 
-			for sock in need_closed
+			for sock in need_closed:
 				try:
 					sock.shutdown(socket.SHUT_RDWR)
 					sock.close()
 				except Exception as e:
 					pass
+		print('over threading')
 
 	def close(self):
 		if not self._connect_server_socket:
@@ -202,7 +205,7 @@ class Network():
 		try:
 			if not getattr(self._connect_server_socket, '_closed'):
 				self._connect_server_socket.shutdown(socket.SHUT_RDWR)
-			self._connect _server_socket.close()
+			self._connect_server_socket.close()
 		except Exception as e:
 			traceback.print_exc()
 		finally:
