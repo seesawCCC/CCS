@@ -13,8 +13,8 @@ from Crypto.Signature import PKCS1_v1_5 as PKCS1_signature
 from Crypto.Hash import SHA
 
 class RsaEncryption:
-    server_public_key = ''
-    server_private_key = ''
+    server_public_key = b'-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC/DAJ9fhXoUEnzLRVMNY3Mijjp\n3fvWJcuFFqd3+3RecfV6nOHGRcbSkd1qWQbqvGAi9RcGgfgrmAV7n+tipsqSQXcH\nZgA6w54J1b0khzOQPDp1PoaRQ6i1cSbdYV/56DKxQVBUmvxyyYaufkDgwS8ROhk6\nLPUk9xPQPfNhJ1ZwwwIDAQAB\n-----END PUBLIC KEY-----'
+    server_private_key = b'-----BEGIN RSA PRIVATE KEY-----\nMIICXAIBAAKBgQC/DAJ9fhXoUEnzLRVMNY3Mijjp3fvWJcuFFqd3+3RecfV6nOHG\nRcbSkd1qWQbqvGAi9RcGgfgrmAV7n+tipsqSQXcHZgA6w54J1b0khzOQPDp1PoaR\nQ6i1cSbdYV/56DKxQVBUmvxyyYaufkDgwS8ROhk6LPUk9xPQPfNhJ1ZwwwIDAQAB\nAoGABIAcF5MJTBQxccTi8WJ6Pn0WaHfzZJuLpvfI0SbqGlwf4W1hqiyJnvs9q9wr\nXAs8+TCB2YQ6nDhJZMdNzGChI/S3fM2VqalskpHmCDdXReGCaUsbsTjl1sHpQtS0\nLHPoKFYmsYGenFEcK5C6NYR/S4qQ5kqlvVUT28gCywLPvoUCQQDFjhhnt8pMeIYU\nWkASmRiyR2ceRdCUB4C8gZ42w7Dvx+ZTQknt2yJtkG57e/UgykJaRKTuthROJcum\nitw7QynvAkEA95EEe5gTUJwMz69tasQ3kWsPM1o06WFsBVB42bBoBVU5JlGISgFL\nGWohPYjvfTcsXXotympK3aESn/2zAMnKbQJBAMNwXt6E6YKbnXGXE1oS0WbV0sMV\nKFK51Xcn+CCPmoSsy0TFCKRiLP4da9+H8yqcTeZFkLGDujTRmVZKe7O5L0sCQH6N\n1XrQ7N7CRxJMHWT81WMzFVws+utq7+tvjbfKpAJF5Kcf+snKC3f8du2b+MFL2RQY\nBxx4ZbkSRBEhgcYfYakCQDnB9anCnf588HIecx6TeX2T6evPdWk5LnJZHqZMH3mC\nLmjWP2qEdZWFU0kF77qf9xXJtGH0OKi97JhRwF/wDtg=\n-----END RSA PRIVATE KEY-----'
 
     def create_rsa_pair(self):
         random_generator = Random.new().read  # 生成随机偏移量
@@ -72,12 +72,12 @@ class RsaEncryption:
         return Check_sign
 
 
-    def create_server_rsa_pair(self):
-        rsa = RSA.generate(1024)  # 生成一个私钥
-        self.server_private_key = rsa.exportKey()  # 导出私钥
-        # private_key = rsa.exportKey()
-        print("private_key:",self.server_private_key.decode())
-        # 生成公钥
-        self.server_public_key = rsa.publickey().exportKey()  # 生成私钥所对应的公钥
-        print("public_key:",self.server_public_key.decode())
+    # def create_server_rsa_pair(self):
+    #     rsa = RSA.generate(1024)  # 生成一个私钥
+    #     self.server_private_key = rsa.exportKey()  # 导出私钥
+    #     # private_key = rsa.exportKey()
+    #     print("private_key:",self.server_private_key.decode())
+    #     # 生成公钥
+    #     self.server_public_key = rsa.publickey().exportKey()  # 生成私钥所对应的公钥
+    #     print("public_key:",self.server_public_key.decode())
 
