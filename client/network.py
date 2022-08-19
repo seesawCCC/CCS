@@ -140,7 +140,7 @@ class Network():
         try:
             # 生成套接字
             self._connect_server_socket = self._get_socket(self._host, self._communication_port)
-            self._connect_server_socket.settimeout(2.0)
+            # self._connect_server_socket.settimeout(2.0)
             # 建立TCP连接
             self._connect(self._connect_server_socket, self._server_addr.get_communication_address())
             return True

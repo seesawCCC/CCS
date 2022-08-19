@@ -33,12 +33,12 @@ class RsaEncryption:
         #     f.write(public_key)  # 将公钥内容写入文件中
         return private_key,public_key
 
-    # plaintext类型为str，public_key用于加密,返回值encrypt_text为bytes
+    # plaintext类型为bytes，public_key用于加密,返回值encrypt_text为bytes
     def Encrypt(self, public_key, plaintext):
         public_key = RSA.importKey(public_key)
         cipher = PKCS1_cipher.new(public_key)  # 生成一个加密的类
         # plaintext.encode()--str->bytes 进行加密 ;加密后再进行编码
-        encrypt_text = base64.b64encode(cipher.encrypt(plaintext.encode()))  # 对数据进行加密
+        encrypt_text = base64.b64encode(cipher.encrypt(plaintext))  # 对数据进行加密
         # encrypt_text = encrypt_text.decode()  # 对文本进行解码
         return encrypt_text
 

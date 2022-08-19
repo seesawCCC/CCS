@@ -19,18 +19,22 @@ from secagg.shared.aes_gcm_encryption import AesGcmEncryption
 from Crypto.Random import get_random_bytes
 
 class ServerSocket:
-    def __init__(self, host, port):
+    def __init__(self, host, communication_port,register_port):
         # host = '127.0.0.1'
         self.host = host
-        self.port = port
-        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # s.setblocking(False)
-        # s.settimeout(1.0)
-        self.s.bind((host, port))
-        self.s.listen(20)
-        self.inputs = [self.s]
+        self.communication_port = communication_port
+        self.register_port = register_port
+        # 连接套接字
+        self.register_socket= socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.register_socket.bind((host,register_port))
+        self.register_socket.listen(20)
+        # 通信套接字
+        self.communication_socket= socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.communication_socket.bind((host,communication_port))
+        self.communication_socket.listen(20)
+        self.inputs = [self.communication_socket,self.register_socket]
         self.outputs = []
-        self.excepts = [self.s]
+        self.excepts = [self.communication_socket,self.register_socket]
         self.client_message = {}
         self.message_lock = threading.Lock()
         self.rsa = RsaEncryption()
@@ -47,7 +51,9 @@ class ServerSocket:
             # time.sleep(1)
             print('start select')
             print("client_message-----",self.client_message)
+            print(self.inputs)
             readable, writeable, exception = select.select(self.inputs, self.outputs, self.excepts)
+            print(readable)
             if readable:
                 print(readable)
             for sock in readable:
@@ -57,7 +63,7 @@ class ServerSocket:
                     self.excepts.remove(sock)
                     continue
                 # 服务器套接字
-                if sock is self.s:
+                if sock is self.communication_socket:
                     client_socket, client_address = sock.accept()
                     print(client_address, ' start link')
                     client_tag = ''.join([str(item) for item in client_address])
@@ -72,7 +78,7 @@ class ServerSocket:
                 else:
                     try:
                         # 从套接字中取出数据
-                        data = sock.recv(1024)
+                        data = sock.recv(4096)
                         if data:
                             # print(pickle.loads(data))
                             print(data)
@@ -99,10 +105,10 @@ class ServerSocket:
                 print('some socket exception')
                 print(exception)
             for sock in exception:
-                if sock is self.s:
+                if sock is self.communication_socket:
                     print('server exception')
                     # 关了所有的连接
-                    self.s.close()
+                    self.communication_socket.close()
                     exit(-1)
                 print(sock, 'in exceptions')
                 self.excepts.remove(sock)
@@ -147,7 +153,7 @@ class ServerSocket:
         sign_result = self.rsa.rsa_public_check_sign(client_public_key,sign,client_nonce)
         data['sign_result'] = sign_result
 
-        callback = "{}:{}".format(self.host, self.port)
+        callback = "{}:{}".format(self.host, self.communication_port)
         data['callback'] = callback
         nonce = int(time.time())+self._plus_nonce
         data['nonce'] = nonce
