@@ -87,7 +87,52 @@ class ClientToServerWrapperMessage:
             self._unmasking_response = UnmaskingResponse()
         return self.unmasking_response()
 
+    def SerializeAsString(self):
+        return pickle.dumps(self)
 
+
+class ModelDistributedMessage():
+    def __init__(self):
+        self._models = {}
+        self._specifications = {}
+        self._neighboors = []
+
+    def models(self):
+        return self._models
+
+    def has_models(self):
+        return bool(self._models)
+
+    def set_models(self, models):
+        self._models = modulus
+
+    def specifications(self):
+        return self._specifications
+
+    def has_specifications(self):
+        return bool(self._specifications)
+
+    def set_specifications(self, specifications):
+        self._specifications = specifications
+
+    def neighboors(self):
+        return self._neighboors
+
+    def has_neighboors(self):
+        return bool(self._neighboors)
+
+    def set_neighboors(self, neighboors):
+        self._neighboors = neighboors
+
+class SecaggStart():
+    def __init__(self):
+        self._secagg = True
+
+    def secagg(self):
+        return self._secagg        
+
+    def set_secagg(self, secagg):
+        self._secagg = secagg
 
 class ServerToClientWrapperMessage:
     MESSAGE_CONTENT_NOT_SET = 'message_content_not_set'

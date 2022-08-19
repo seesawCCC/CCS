@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-08-12 21:30:31
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-08-14 17:31:38
+# @Last Modified time: 2022-08-18 19:09:40
 
 import socket
 import traceback
@@ -150,6 +150,15 @@ class Network():
 		except Exception as e:
 			traceback.print_exc()
 			return False
+
+	def get_message_lock(self):
+		return self._message_list_lock
+
+	def get_receive_messages(self):
+		return self._receive_messages
+
+	def get_client_id(self):
+		return self._client_id
 
 	def listen(self):
 		if not self._connect_server_socket:

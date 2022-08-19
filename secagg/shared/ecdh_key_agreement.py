@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-29 20:02:55
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-08-04 18:40:03
+# @Last Modified time: 2022-08-17 18:29:51
 
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -90,7 +90,9 @@ class EcdhKeyAgreement():
 	# private_key: EcdhPrivateKey or bytes
 	# return Status
 	@staticmethod
-	def CreateFromPrivateKey(private_key, password=''):
+	def CreateFromPrivateKey(private_key, password=b''):
+		if not password:
+			password = EcdhKeyAgreement.private_password
 		try:
 			if isinstance(private_key, EcdhPrivateKey):
 				pass
