@@ -36,23 +36,23 @@ class SecAggClientR3UnmaskingState(SecAggClientAliveBaseState):
             id=i-1
             if id == self.client_id:
                 return SecAggClientAliveBaseState.AbortAndNotifyServer(
-                    "The received UnmaskingRequest states this client has aborted, but this client had not yet aborted.")
+                    "The received UnmaskingRequest states this client1 has aborted, but this client1 had not yet aborted.")
             elif id >= self.number_of_clients:
                 return SecAggClientAliveBaseState.AbortAndNotifyServer(
-                    "The received UnmaskingRequest contains a client id that does correspond to any client.")
+                    "The received UnmaskingRequest contains a client1 id that does correspond to any client1.")
             if self.other_client_states[id] ==  OtherClientState.kAlive:
                 self.other_client_states[id] = OtherClientState.kDeadAtRound3
                 number_of_alive_clients = number_of_alive_clients-1
             elif self.other_client_states[id] ==  OtherClientState.kDeadAtRound3:
                 return SecAggClientAliveBaseState.AbortAndNotifyServer(
-                    "The received UnmaskingRequest repeated a client more than once as a dead client.")
+                    "The received UnmaskingRequest repeated a client1 more than once as a dead client1.")
             elif self.other_client_states[id] == OtherClientState.kDeadAtRound1:
                 pass
             elif self.other_client_states[id] == OtherClientState.kDeadAtRound2:
                 pass
             else:
                 return SecAggClientAliveBaseState.AbortAndNotifyServer(
-                    "The received UnmaskingRequest considers a client dead in round 3 that was already considered dead.");
+                    "The received UnmaskingRequest considers a client1 dead in round 3 that was already considered dead.");
 
         if number_of_alive_clients <self.minimum_surviving_clients_for_reconstruction:
             return SecAggClientAliveBaseState.AbortAndNotifyServer(

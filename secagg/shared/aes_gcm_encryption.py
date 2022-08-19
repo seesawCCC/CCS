@@ -9,19 +9,19 @@ from .aes_key import AesKey
 from Crypto.Cipher import AES
 import base64
 from base.monitoring import FCP_STATUS, StatusCode
+import pickle
 
 kIvSize = 12
 kTagSize = 16
 
 class AesGcmEncryption:
-    nonce = b''
 
     def Encrypt(self, key, plaintext):
+        result={}
         if key.kSize == 0 :
             print("Encrypt called with blank key.")
         if key.kSize != AesKey.kSize :
             print("Encrypt called with key of "+str(key.kSize)+"bytes, but 32 bytes are required.")
-
         ciphertext_buffer = [0]*(kIvSize + len(plaintext) + kTagSize)
         # FCP_CHECK(RAND_bytes(ciphertext_buffer.data(), kIvSize))
 
@@ -29,7 +29,6 @@ class AesGcmEncryption:
         # key: 为bytes，64字符
         # plaintext: 为bytes, 明文
         # 返回: 为bytes, base64 的密文
-
         iv = [0]*kIvSize
         # 设置为byte类型
         key = key.data()
@@ -39,13 +38,22 @@ class AesGcmEncryption:
         cipher = AES.new(key, AES.MODE_GCM)
         # 加密
         cipher_text, tag = cipher.encrypt_and_digest(text)
-        self.nonce = cipher.nonce
+        # self.nonce = cipher.nonce
         enc_result = base64.b64encode(tag + cipher_text)
 
-        return enc_result
+        result['enc'] = enc_result
+        result['nonce'] = cipher.nonce
+        result = pickle.dumps(result)
+
+        return result
 
 
-    def Decrypt(self, key, ciphertext):
+    def Decrypt(self, key,message):
+
+        message = pickle.loads(message)
+        ciphertext = message['enc']
+        nonce = message['nonce']
+
         if key.kSize == 0 :
             print("Encrypt called with blank key.")
         if key.kSize != AesKey.kSize :
@@ -60,14 +68,14 @@ class AesGcmEncryption:
         #     key: 为bytes，64字符(32字节)
         #     ciphertext: 为bytes, base64 的密文
         #    返回: bytes 的明文
-
+        message['enc'] = ciphertext
         key = key.data()
-        text = ciphertext
-        data = base64.b64decode(text)
+        data = base64.b64decode(ciphertext)
         tag = data[0:kTagSize]
         data = data[kTagSize:]
         # 初始化解密器
-        cipher = AES.new(key, AES.MODE_GCM, nonce=self.nonce)
+        cipher = AES.new(key, AES.MODE_GCM, nonce=nonce)
+        # cipher = AES.new(key, AES.MODE_GCM)
         try:
             dec_result = cipher.decrypt(data)
             # dec_result = dec_result.decode('utf-8')

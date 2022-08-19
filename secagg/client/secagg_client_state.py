@@ -39,7 +39,7 @@ class SecAggClientState():
 
 	@StatusWarp
 	def Abort(self, reason):
-		information = "The client was already in terminal state {} but received an abort with message: {}".format(StateName(), reason)
+		information = "The client1 was already in terminal state {} but received an abort with message: {}".format(StateName(), reason)
 		return FCP_STATUS(self._fcp_terminal_state, information)
 
 	def IsAborted(self):
@@ -50,7 +50,7 @@ class SecAggClientState():
 
 	@StatusWarp
 	def ErrorMessage(self):
-		information = "Error message requested, but client is in state: {}".format(self.StateName())
+		information = "Error message requested, but client1 is in state: {}".format(self.StateName())
 		return FCP_STATUS(self._fcp_terminal_state, information)
 
 	def ValidateInput(self, input_map, input_vector_specs):

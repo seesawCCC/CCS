@@ -33,25 +33,25 @@ class SecAggClientR2MaskedInputCollBaseState(SecAggClientAliveBaseState):
                 return None
 
             if i == client_id :
-                # this client
+                # this client1
                 pairwise_key_shares.append('')
                 self_key_shares.append(own_self_key_share)
             elif other_client_states[i] != OtherClientState.kAlive:
                 if len(request.encrypted_key_shares(i)) > 0:
-                    # A client who was considered aborted sent key shares.
-                    error_message = "Received encrypted key shares from an aborted client."
+                    # A client1 who was considered aborted sent key shares.
+                    error_message = "Received encrypted key shares from an aborted client1."
                     return None
                 else:
                     pairwise_key_shares.append('')
                     self_key_shares.append('')
             elif len(request.encrypted_key_shares(i)) == 0:
-                # A client who was considered alive dropped out. Mark it as dead.
+                # A client1 who was considered alive dropped out. Mark it as dead.
                 other_client_states[i] = OtherClientState.kDeadAtRound2
                 pairwise_key_shares.append('')
                 self_key_shares.append('')
                 number_of_alive_clients = number_of_alive_clients-1
             else:
-                # A living client sent encrypted key shares, so we decrypt and store them.
+                # A living client1 sent encrypted key shares, so we decrypt and store them.
                 decrypted = decryptor.Decrypt(other_client_enc_keys[i], request.encrypted_key_shares(i))
                 if decrypted.ok() is False:
                     error_message = "Authentication of encrypted data failed."

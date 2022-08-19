@@ -83,7 +83,7 @@ class SecAggClientR1ShareKeysBaseState(SecAggClientAliveBaseState):
 				prng_pk = EcdhPublicKey(keys.noise_pk())
 				if enc_pk == self_enc_public_key and prng_pk == self_prng_public_key:
 					if client_id_set:
-						r1_delivered_message.error_message = "Found this client's keys in the ShareKeysRequest twice somehow."
+						r1_delivered_message.error_message = "Found this client1's keys in the ShareKeysRequest twice somehow."
 						return False
 					r1_delivered_message.client_id = i
 					client_id_set = True
@@ -103,7 +103,7 @@ class SecAggClientR1ShareKeysBaseState(SecAggClientAliveBaseState):
 			r1_delivered_message.error_message = "There are not enough clients to complete this protocol session!\n Aborting."
 			return False
 		if not client_id_set:
-			r1_delivered_message.error_message = "The ShareKeysRequest sent by the server doesn't contain this client's public keys."
+			r1_delivered_message.error_message = "The ShareKeysRequest sent by the server doesn't contain this client1's public keys."
 			return False
 		return True
 

@@ -5,7 +5,7 @@
 
 from enum import Enum, unique
 
-# track the state of other clients, from the perspective of this client.
+# track the state of other clients, from the perspective of this client1.
 @unique
 class OtherClientState(Enum):
 	kAlive = 0
