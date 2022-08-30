@@ -17,6 +17,9 @@ from base.monitoring import FCP_CHECK
 from base.rsa_encryption import RsaEncryption
 from secagg.shared.aes_gcm_encryption import AesGcmEncryption
 from Crypto.Random import get_random_bytes
+from secagg.shared.aes_key import AesKey
+import os
+from service.user_pool import UserPool
 
 class ServerSocket:
     def __init__(self, host, communication_port,register_port):
@@ -40,7 +43,7 @@ class ServerSocket:
         self.rsa = RsaEncryption()
         self.server_public_key = self.rsa.server_public_key
         self.server_private_key = self.rsa.server_private_key
-        self.client_list = []
+        # self.client_list = []
         self.client_flag = 0
         self._plus_nonce = random.randint(1, 4096)
 
@@ -134,23 +137,14 @@ class ServerSocket:
         message = json.loads(message_json)
 
         FCP_CHECK(message['action'] == 1)
-
         client_nonce = message['nonce']
         client_callback = message['callback']
+        register_information = {'callback': client_callback, 'nonce': client_nonce}
         client_public_key = message['public'].encode()
         sign = message['sign']
 
-        # 完成注册
-        msg = {}
-        msg["callback"] = client_callback
-        msg["public_key"] = client_public_key
-        msg["id"] = self.client_flag
-        self.client_list.append(msg)
-        data['clientId'] = self.client_flag
-        self.client_flag = self.client_flag+1
-
-        # 验证数字签名 结果为bool
-        sign_result = self.rsa.rsa_public_check_sign(client_public_key,sign,client_nonce)
+        # 验证数字签名 结果为bool，签名内容为register_information
+        sign_result = self.rsa.rsa_public_check_sign(client_public_key,sign,register_information)
         data['sign_result'] = sign_result
 
         callback = "{}:{}".format(self.host, self.communication_port)
@@ -159,11 +153,28 @@ class ServerSocket:
         data['nonce'] = nonce
         data['action'] = 1
 
-        # 生成通信密钥
-        enc_key = get_random_bytes(32)
+        # 利用AesKey生成通信密钥
+        seed = os.urandom(32)
+        enc_key = AesKey(seed,32)
         data['enc_key'] = enc_key
 
-        server_encry_data = self.rsa.Encrypt(client_public_key, json.dumps(data))
+        # 完成注册
+        User={}
+        msg = {}
+        msg['client_id'] = self.client_flag
+        msg['enc_key'] = enc_key
+        # msg['callback'] = client_callback
+        msg['public_key'] = client_public_key
+        msg['status'] = 1
+        msg['last_nonce'] = client_nonce
+        User[client_callback] = msg
+        # 在用户池中添加用户
+        self.UserPool.AddUser(callback,User)
+
+        data['clientId'] = self.client_flag
+        self.client_flag = self.client_flag+1
+
+        server_encry_data = self.rsa.Encrypt(client_public_key, pickle.dumps(data))
 
         return server_encry_data
 
