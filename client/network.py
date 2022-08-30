@@ -6,7 +6,8 @@
 
 import socket
 import traceback
-import json
+# import json
+import pickle
 import threading
 import random
 import hashlib
@@ -98,23 +99,23 @@ class Network():
             callback = "{}:{}".format(self._host, self._communication_port)
             nonce = int(time.time())+self._plus_nonce
             # hash_str = self._compute_hash(self._public_key, ','.join(callback, str(nonce)))
-            # register_information = {'callback': callback, 'nonce': nonce}
+            register_information = {'callback': callback, 'nonce': nonce}
             message['callback'] = callback
             message['nonce'] = nonce
 
 
-            # sign 对callback进行数字签名--要求在服务器端能取出callback以验证身份
-            sign_register_information = self._rsa_encryption.rsa_private_sign(self._private_key, nonce)
+            # sign 对register_information进行数字签名--要求在服务器端能取出以验证身份
+            sign_register_information = self._rsa_encryption.rsa_private_sign(self._private_key, register_information)
             message['sign'] = sign_register_information
-            server_encry_data = self._rsa_encryption.Encrypt(self._server_public_key, json.dumps(message))
+            server_encry_data = self._rsa_encryption.Encrypt(self._server_public_key, pickle.dumps(message))
 
             register_socket.sendall(server_encry_data)
             # 服务器处理
 
             encry_reply = register_socket.recv(4096)
             # Check reply
-            decry_reply_json = self._rsa_encryption.Decrypt(self._private_key, encry_reply)
-            decry_reply = json.loads(decry_reply_json)
+            decry_reply_pickle = self._rsa_encryption.Decrypt(self._private_key, encry_reply)
+            decry_reply = pickle.loads(decry_reply_pickle)
             FCP_CHECK(decry_reply['action'] == 1)
             # resign
             FCP_CHECK(decry_reply['sign_result'])

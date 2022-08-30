@@ -12,7 +12,6 @@ import threading
 import random
 import pickle
 import sys
-import json
 from base.monitoring import FCP_CHECK
 from base.rsa_encryption import RsaEncryption
 from secagg.shared.aes_gcm_encryption import AesGcmEncryption
@@ -46,6 +45,7 @@ class ServerSocket:
         # self.client_list = []
         self.client_flag = 0
         self._plus_nonce = random.randint(1, 4096)
+        self.UserPool = UserPool()
 
     # def sing(s, inputs, outputs, excepts, client_message, message_lock):
     def sing(self):
@@ -129,12 +129,13 @@ class ServerSocket:
     # 输入：message{}
     # 输出：data{}
     # 65行进行调用
+
     def data_process_1(self,message):
         data={}
 
         # 解密数据，转换类型
-        message_json = self.rsa.Decrypt(self.server_private_key,message)
-        message = json.loads(message_json)
+        message_pickle = self.rsa.Decrypt(self.server_private_key,message)
+        message = pickle.loads(message_pickle)
 
         FCP_CHECK(message['action'] == 1)
         client_nonce = message['nonce']
