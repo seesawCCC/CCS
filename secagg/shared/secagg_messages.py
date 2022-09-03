@@ -7,6 +7,9 @@
 
 # 重写secagg_messages.proto
 import pickle
+from collections import OrderedDict
+
+from .input_vector_specification import InputVectorSpecification
 
 class ClientToServerWrapperMessage:
     def __init__(self):
@@ -93,9 +96,12 @@ class ClientToServerWrapperMessage:
 
 class ModelDistributedMessage():
     def __init__(self):
-        self._models = {}
-        self._specifications = {}
+        self._models = OrderedDict()
+        self._specifications = []
         self._neighboors = []
+        self._integerization = 1000000
+        self._max_clients_expected = 0
+        self._minimum_surviving_clients_for_reconstruction = 0
 
     def models(self):
         return self._models
@@ -104,7 +110,8 @@ class ModelDistributedMessage():
         return bool(self._models)
 
     def set_models(self, models):
-        self._models = modulus
+        if isinstance(models, OrderedDict):
+            self._models = models
 
     def specifications(self):
         return self._specifications
@@ -113,7 +120,10 @@ class ModelDistributedMessage():
         return bool(self._specifications)
 
     def set_specifications(self, specifications):
-        self._specifications = specifications
+        for name in specifications:
+            length, modulus = specifications[name]
+            specification = InputVectorSpecification(name, length, modulus)
+            self._specifications.append(specification)
 
     def neighboors(self):
         return self._neighboors
@@ -123,6 +133,25 @@ class ModelDistributedMessage():
 
     def set_neighboors(self, neighboors):
         self._neighboors = neighboors
+
+    def integerization(self):
+        return self._integerization
+
+    def set_integerization(self, integerization):
+        if isinstance(integerization, int):
+            self._integerization = integerization
+
+    def max_clients_expected(self):
+        return self._max_clients_expected
+
+    def set_max_clients_expected(self, max_clients_expected):
+        self._max_clients_expected = max_clients_expected
+
+    def minimum_surviving_clients_for_reconstruction(self):
+        return self._minimum_surviving_clients_for_reconstruction
+
+    def set_minimum_surviving_clients_for_reconstruction(self, minimum_surviving_clients_for_reconstruction):
+        self._minimum_surviving_clients_for_reconstruction = minimum_surviving_clients_for_reconstruction
 
 class SecaggStart():
     def __init__(self):
@@ -245,7 +274,7 @@ class AdvertiseKeys:
 
 class PairOfPublicKeys:
     def __init__(self, noise_pk=b'', enc_pk=b''):
-        #str类型
+        #byte类型
         self._noise_pk = noise_pk
         self._enc_pk = enc_pk
 
@@ -376,6 +405,9 @@ class MaskedInputCollectionResponse:
 
     def set_vectors(self, vectors):
         self._vectors = vectors.copy()
+
+    def mutable_vectors(self):
+        return self._vectors
 
 
 class MaskedInputVector:

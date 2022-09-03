@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-19 18:10:57
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-08-02 16:55:04
+# @Last Modified time: 2022-09-01 10:51:26
 
 # FCP_CHECK到时用一个Logger代替算了
 
@@ -50,7 +50,7 @@ class SecAggVector():
 			if element < 0:
 				raise Exception("Only non negative elements are allowed in the vector.")
 			if element >= self._modulus:
-				raise Exception("The span does not have the appropriate modulus: element with value:{} found, max value allowed{}".format(element, SecAggVector.kMaxModulus))
+				raise Exception("The span does not have the appropriate modulus: element with value:{} found, max value allowed{}".format(element, self._modulus))
 		if self._branchless_codec:
 			 self._PackUint64IntoByteStringBranchless(span)
 		else:

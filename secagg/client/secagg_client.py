@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-11 17:35:22
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-08-03 09:32:15
+# @Last Modified time: 2022-09-02 23:28:02
 
 import threading
 
@@ -28,7 +28,7 @@ class SecAggClient():
 		self._state = SecAggClientR0AdvertiseKeysInputNotSetState(max_clients_expected, minimum_surviving_clients_for_reconstruction,\
           				input_vector_specs, prng, sender, transition_listener, prng_factory, self._async_abort)
 
-	# return StatusCode
+	# return Status
 	def Start(self):
 		with self._mu:
 			state_or_error = self._state.Start()
@@ -49,7 +49,7 @@ class SecAggClient():
 				self._state = state_or_error.value()
 			return self._get_process_state(state_or_error)
 
-	# return StatusCode
+	# return Status
 	def SetInput(self, input_map):
 		with self._mu:
 			state_or_error = self._state.SetInput(input_map)
@@ -85,7 +85,7 @@ class SecAggClient():
 			return self._state.StateName()
 
 	def _get_process_state(self, state_or_error):
-		return state_or_error.status()
+		return state_or_error
 
 	def Close(self):
 		with self.__class__._class_lock:

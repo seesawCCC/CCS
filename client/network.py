@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-08-12 21:30:31
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-08-18 19:09:40
+# @Last Modified time: 2022-09-03 09:51:16
 
 import socket
 import traceback
@@ -60,6 +60,8 @@ class Network():
 				cls._instance = super(Network, cls).__new__(cls)
 		return cls._instance
 
+	# communication_port, register_port 都是客户端的端口
+	# 对应的服务器地址存储在server_addr中
 	def __init__(self, host, communication_port, register_port, server_addr, server_public_key):
 		self._host = host
 		self._communication_port = communication_port
@@ -80,6 +82,11 @@ class Network():
 
 		self._aes_gcm = AesGcmEncryption()
 		self._other_client_addrs = []
+
+		self._over = True
+
+	def isOver(self):
+		return self._over
 
 	def register(self):
 		register_socket = None
@@ -130,11 +137,13 @@ class Network():
 				register_socket.close()
 			return server_enc_key
 
+	# 连接服务器的通讯套接字
 	def connect_to_server(self):
 		try:
 			self._connect_server_socket = self._get_socket(self._host, self._communication_port)
 			self._connect_server_socket.settimeout(2.0)
 			self._connect(self._connect_server_socket, self._server_addr.get_communication_address())
+			self._over = False
 			return True
 		except Exception as e:
 			traceback.print_exc()
@@ -206,6 +215,7 @@ class Network():
 					sock.close()
 				except Exception as e:
 					pass
+		self._over = True
 		print('over threading')
 
 	def close(self):
