@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-08-31 13:32:27
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-09-02 23:11:45
+# @Last Modified time: 2022-09-04 23:12:17
 
 import importlib
 import inspect
@@ -53,7 +53,6 @@ class ModelController():
 		if not self.vector_specifications:
 			return None
 		model_state_dict = self.__train_model.state_dict()
-		print(model_state_dict['input_linear.weight'])
 		input_map = {}
 		for specification in self.vector_specifications:
 			name = specification.name()
@@ -69,3 +68,9 @@ class ModelController():
 
 	def Train(self):
 		self.__train_model_class.train(self.__train_model)
+
+	def save_model_paramter(self, path):
+		import torch
+		model_state_dict = self.__train_model.state_dict()
+		torch.save(model_state_dict, path)
+
