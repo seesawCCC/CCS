@@ -105,7 +105,7 @@ class Network():
 
 
             # sign 对register_information进行数字签名--要求在服务器端能取出以验证身份
-            sign_register_information = self._rsa_encryption.rsa_private_sign(self._private_key, register_information)
+            sign_register_information = self._rsa_encryption.rsa_private_sign(self._private_key, pickle.dumps(register_information))
             message['sign'] = sign_register_information
             server_encry_data = self._rsa_encryption.Encrypt(self._server_public_key, pickle.dumps(message))
 

@@ -11,11 +11,8 @@ import time
 import threading
 import random
 import pickle
-import sys
-from base.monitoring import FCP_CHECK
 from base.rsa_encryption import RsaEncryption
 from secagg.shared.aes_gcm_encryption import AesGcmEncryption
-from Crypto.Random import get_random_bytes
 from secagg.shared.aes_key import AesKey
 from secagg.shared.secagg_messages import ServerToClientWrapperMessage,ShareKeysRequest,MaskedInputCollectionRequest
 from secagg.shared.secagg_messages import UnmaskingRequest
@@ -90,9 +87,6 @@ class ServerSocket:
                     client_socket, client_address = sock.accept()
                     print(client_address, ' start link')
                     client_tag = ''.join([str(item) for item in client_address])
-                    print("client_tag",client_tag)
-                    socket_table[client_socket] = client_tag
-                    self.client_message[client_tag] = []
                     # 将客户套接字存入input
                     inputs.append(client_socket)
                     # outputs.append(client_socket)
@@ -107,9 +101,7 @@ class ServerSocket:
                             print(data)
                             # 此处调用data_process()
                             result = self.data_process_1(data)
-                            sock.send(result)
-                            with self.message_lock:
-                                self.client_message[socket_table[sock]].append(data)
+                            sock.sendall(result)
                             # # 存放需要进行回复操作的socket
                             # if sock not in self.outputs:
                             #     self.outputs.append(sock)
@@ -129,17 +121,15 @@ class ServerSocket:
                 print('some socket exception')
                 print(exception)
             for sock in exception:
-                if sock is self.communication_socket:
+                if sock is register_socket:
                     print('server exception')
                     # 关了所有的连接
-                    self.communication_socket.close()
+                    register_socket.close()
                     exit(-1)
                 print(sock, 'in exceptions')
                 excepts.remove(sock)
                 # outputs.remove(sock)
                 inputs.remove(sock)
-                with self.message_lock:
-                    self.client_message.pop(sock)
                 sock.close()
         print('ok, threading over')
 
@@ -206,7 +196,11 @@ class ServerSocket:
                         print(sock, ' need to be closed')
                         sock.shutdown(socket.SHUT_RDWR)
                         sock.close()
+                        # 调用socket_table
                         inputs.remove(sock)
+                        # 移走掉线用户
+                        callback = socket_table[sock]
+                        self.UserPool.Remove(callback)
                         # outputs.remove(sock)
                         excepts.remove(sock)
 
@@ -214,15 +208,17 @@ class ServerSocket:
                 print('some socket exception')
                 print(exception)
             for sock in exception:
-                if sock is self.communication_socket:
+                if sock is communication_socket:
                     print('server exception')
                     # 关了所有的连接
-                    self.communication_socket.close()
+                    communication_socket.close()
                     exit(-1)
                 print(sock, 'in exceptions')
                 excepts.remove(sock)
                 # outputs.remove(sock)
                 inputs.remove(sock)
+                callback = socket_table[sock]
+                self.UserPool.Remove(callback)
                 with self.message_lock:
                     self.client_message.pop(sock)
                 sock.close()
@@ -243,7 +239,7 @@ class ServerSocket:
         message_pickle = self.rsa.Decrypt(self.server_private_key,message)
         message = pickle.loads(message_pickle)
 
-        FCP_CHECK(message['action'] == 1)
+        # FCP_CHECK(message['action'] == 1)
         client_nonce = message['nonce']
         client_callback = message['callback']
         register_information = {'callback': client_callback, 'nonce': client_nonce}
@@ -251,7 +247,8 @@ class ServerSocket:
         sign = message['sign']
 
         # 验证数字签名 结果为bool，签名内容为register_information
-        sign_result = self.rsa.rsa_public_check_sign(client_public_key,sign,register_information)
+        # rsa.rsa_public_check_sign 将register_information修改为bytes
+        sign_result = self.rsa.rsa_public_check_sign(client_public_key,sign,pickle.dumps(register_information))
         data['sign_result'] = sign_result
 
         callback = "{}:{}".format(self.host, self.communication_port)
@@ -263,10 +260,9 @@ class ServerSocket:
         # 利用AesKey生成通信密钥
         seed = os.urandom(32)
         enc_key = AesKey(seed,32)
-        data['enc_key'] = enc_key
+        data['enc_key'] = enc_key.data()
 
         # 完成注册
-        User={}
         msg = {}
         msg['client_id'] = self.client_flag
         msg['enc_key'] = enc_key
@@ -275,7 +271,7 @@ class ServerSocket:
         # communication_socket状态
         msg['status'] = 0
         msg['last_nonce'] = client_nonce
-        # User[client_callback] = msg
+        msg['socket'] = None
         # 在用户池中添加用户
         self.UserPool.AddUser(client_callback,msg)
 
@@ -286,12 +282,18 @@ class ServerSocket:
 
         return server_encry_data
 
-    # action2--服务器任务:
-    # 1.处理客户
-    # 输入：
-    # 输出：
-    def data_process_2(self,message):
-        pass
+
+    def Data_Decrypt(self,callback,client_message):
+        user = self.UserPool.GetUserByAddress(callback)
+        encry_message = client_message[callback]
+        enc_key = user['enc_key']
+        decry_message = self.aes.Decrypt(enc_key, encry_message)
+        message = pickle.loads(decry_message)
+        #再从message['data']中取出数据 -----ClientToServerWrapperMessage对象
+        message = message['data']
+        # 判断是否是abort
+        abort = message.has_abort()
+        return message,abort
 
     # R0--服务器任务:仅分发客户的两个公钥
     # 1.记录当前在线用户集合，判断是否到达阈值t
@@ -307,29 +309,32 @@ class ServerSocket:
             else:
                 # UserAddress = self.UserPool.GetAllUserAddress()
                 pair_of_public_keys = []
+                result = {}
                 # 循环取出客户的两个公钥
                 for i in UserAddress:
-                    user = self.UserPool.GetUserByAddress(i)
-                    # 取出对应客户的加密数据和通信密钥
-                    encry_message = client_message[i]
-                    enc_key = user['enc_key']
-                    decry_message = self.aes.Decrypt(enc_key, encry_message)
-                    message = pickle.loads(decry_message)
-                    #再从message中取出两个公钥  -----ClientToServerWrapperMessage对象
-                    keys = message.advertise_keys().pair_of_public_keys()
-                    pair_of_public_keys.append(keys)
+                    message,abort = self.Data_Decrypt(i,client_message)
+                    if abort is False:  #指代用户在线
+                        keys = message.advertise_keys().pair_of_public_keys()
+                        pair_of_public_keys.append(keys)
+                    else:
+                        user = self.UserPool.GetUserByAddress(i)
+                        user['status'] = 0
+                        pair_of_public_keys.append('')
                 Keys = ShareKeysRequest()
                 Keys.set_pairs_of_public_keys(pair_of_public_keys)
                 msg=ServerToClientWrapperMessage()
                 msg.set_share_keys_request(Keys)
                 # 将msg发送至客户套接字   ---msg为ServerToClientWrapperMessage类型
+                result['data'] = msg
+                result['action'] = 0
+                result ['time'] = int(time.time()) + random.randint(1, 4096)
                 for j in UserAddress:
                     user = self.UserPool.GetUserByAddress(j)
                     enc_key = user['enc_key']
                     try:
                         sock = self.UserPool.GetSocket(j)
                         # 序列化之后进行enc_key加密
-                        encry_message = self.aes.Decrypt(enc_key,pickle.dumps(msg))
+                        encry_message = self.aes.Encrypt(enc_key,pickle.dumps(result))
                         sock.send(encry_message)
                     except Exception as e:
                         self.UserPool.Remove(j)
@@ -342,39 +347,49 @@ class ServerSocket:
     # 将encrypted_key_shares放入ServerToClientWrapperMessage对象的_masked_input_request中
     # 输入：client_message客户信息列表，t阈值，UserAddress1表示R0在线用户列表
     # 输出：通过套接字向用户集合分发秘密
-    def server_r1(self,client_message,t,UserAddress1):
+    def server_r1(self,client_message,t,UserAddress,UserAddress1):
         try:
             # 判断在线用户数量
             if len(UserAddress1) < t:
                 raise Exception('abort')
             else:
-                # UserAddress = self.UserPool.GetAllUserAddress()
-                encrypted_key_shares = []
+                n = len(UserAddress)
+                # 生成一个二维数组
+                encrypted_key_shares = [[0 for i in range(n)] for j in range(n)]
                 # 循环取出客户发送的cij
                 for i in UserAddress1:
-                    user = self.UserPool.GetUserByAddress(i)
-                    # 取出对应客户的加密数据和通信密钥
-                    encry_message = client_message[i]
-                    enc_key = user['enc_key']
-                    decry_message = self.aes.Decrypt(enc_key, encry_message)
-                    message = pickle.loads(decry_message)
                     #message  -----ClientToServerWrapperMessage对象
-                    key_shares = message.share_keys_response().encrypted_key_shares()
-                    # noise_pk = pair_of_public_keys.noise_pk()
-                    # enc_pk = pair_of_public_keys.enc_pk()
-                    encrypted_key_shares.append(key_shares)
-                MaskedInput = MaskedInputCollectionRequest()
-                MaskedInput.set_encrypted_key_shares(encrypted_key_shares)
-                msg=ServerToClientWrapperMessage()
-                msg.set_masked_input_request(MaskedInput)
-                # 将msg发送至客户套接字   ---msg为ServerToClientWrapperMessage类型
+                    message,abort = self.Data_Decrypt(i,client_message)
+                    # 利用UserAddress确定下标
+                    index = UserAddress.index(i)
+                    if abort is False:
+                        # -----------------------二维数组赋值--------------------------
+                        key_shares = message.share_keys_response().encrypted_key_shares()
+
+                        encrypted_key_shares[index] = key_shares
+                    else:
+                        user = self.UserPool.GetUserByAddress(i)
+                        user['status'] = 0
+                        encrypted_key_shares[index] = [0]*n
+                # encrypted_key_shares此时为二维数组 ,利用zip函数进行转置
+                aT=list(map(list,zip(*encrypted_key_shares)))
                 for j in UserAddress1:
+                    result={}
+                    index = UserAddress.index(j)
+                    MaskedInput = MaskedInputCollectionRequest()
+                    MaskedInput.set_encrypted_key_shares(aT[index])
+                    msg=ServerToClientWrapperMessage()
+                    msg.set_masked_input_request(MaskedInput)
+                    # 将msg发送至客户套接字   ---msg为ServerToClientWrapperMessage类型
+                    result['data'] = msg
+                    result['action'] = 1
+                    result ['time'] = int(time.time()) + random.randint(1, 4096)
                     user = self.UserPool.GetUserByAddress(j)
                     enc_key = user['enc_key']
                     try:
                         sock = self.UserPool.GetSocket(j)
                         # 序列化之后进行enc_key加密
-                        encry_message = self.aes.Decrypt(enc_key,pickle.dumps(msg))
+                        encry_message = self.aes.Encrypt(enc_key,pickle.dumps(result))
                         sock.send(encry_message)
                     except Exception as e:
                         self.UserPool.Remove(j)
@@ -394,19 +409,20 @@ class ServerSocket:
             if len(UserAddress2) < t:
                 raise Exception('abort')
             else:
+                dead_3_client_ids = []
                 # 循环取出客户发送的掩码
                 for i in UserAddress2:
-                    user = self.UserPool.GetUserByAddress(i)
-                    # 取出对应客户的加密数据和通信密钥
-                    encry_message = client_message[i]
-                    enc_key = user['enc_key']
-                    decry_message = self.aes.Decrypt(enc_key, encry_message)
-                    message = pickle.loads(decry_message)
-                    #masked为掩码,服务器存储掩码
-                    masked = message.masked_input_response().vectors()
-                    self.MaskedInput.append(masked)
-                # 分发用户聚合
-                dead_3_client_ids = []
+                    message,abort = self.Data_Decrypt(i,client_message)
+                    if abort is False:
+                        #masked为掩码,服务器存储掩码
+                        masked = message.masked_input_response().vectors()
+                        self.MaskedInput.append(masked)
+                    else:
+                        user = self.UserPool.GetUserByAddress(i)
+                        user['status'] = 0
+                        client_id = UserAddress.index(i)+1
+                        dead_3_client_ids.append(client_id)
+                # 分发用户集合
                 for j in UserAddress1:
                     # R2掉线的用户
                     if j not in UserAddress2:
@@ -417,13 +433,17 @@ class ServerSocket:
                 msg=ServerToClientWrapperMessage()
                 msg.set_unmasking_request(unmasking_request)
                 # 将msg发送至客户套接字   ---msg为ServerToClientWrapperMessage类型
+                result = {}
+                result['data'] = msg
+                result['action'] = 2
+                result ['time'] = int(time.time()) + random.randint(1, 4096)
                 for k in UserAddress2:
                     user = self.UserPool.GetUserByAddress(k)
                     enc_key = user['enc_key']
                     try:
                         sock = self.UserPool.GetSocket(k)
                         # 序列化之后进行enc_key加密
-                        encry_message = self.aes.Decrypt(enc_key,pickle.dumps(msg))
+                        encry_message = self.aes.Encrypt(enc_key,pickle.dumps(result))
                         sock.send(encry_message)
                     except Exception as e:
                         self.UserPool.Remove(k)

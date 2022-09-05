@@ -50,24 +50,24 @@ class RsaEncryption:
         # decrypt_text = decrypt_text.decode()  # 对文本内容进行解码
         return decrypt_text
 
-    # 数字签名，使用私钥对数据进行签名，data为str类型
+    # 数字签名，使用私钥对数据进行签名，data为bytes类型
     def rsa_private_sign(self,private_key,data):
         private_key = RSA.importKey(private_key) # 导入私钥
         signer = PKCS1_signature.new(private_key)  # 设置签名的类
         digest = SHA.new() # 创建sha加密的类
-        digest.update(data.encode())  # 将要加密的数据进行sha加密
+        digest.update(data)  # 将要加密的数据进行sha加密
         sign = signer.sign(digest)  # 对数据进行签名
         # 对签名进行处理
         signature = base64.b64encode(sign)  # 对数据进行base64加密
         signature = signature.decode()  # 再进行编码
         return signature
 
-    # 数字签名，使用公钥钥对签名进行验证，data为str类型，与rsa_private_sign()的data参数值一致
+    # 数字签名，使用公钥钥对签名进行验证，data为bytes类型，与rsa_private_sign()的data参数值一致
     def rsa_public_check_sign(self,public_key,sign,data):
         publick_key = RSA.importKey(public_key)  # 导入公钥
         verifier = PKCS1_signature.new(publick_key)  # 生成验证信息的类
         digest = SHA.new()  # 创建一个sha加密的类
-        digest.update(data.encode())  # 将获取到的数据进行sha加密
+        digest.update(data)  # 将获取到的数据进行sha加密
         Check_sign = verifier.verify(digest, base64.b64decode(sign))  # 对数据进行验证，返回bool值
         return Check_sign
 
