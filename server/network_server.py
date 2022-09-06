@@ -18,6 +18,7 @@ from secagg.shared.secagg_messages import ServerToClientWrapperMessage,ShareKeys
 from secagg.shared.secagg_messages import UnmaskingRequest
 import os
 from service.user_pool import UserPool
+from secagg.shared.shamir_secret_sharing import ShamirSecretSharing
 
 class ServerSocket:
     def __init__(self, host, communication_port,register_port):
@@ -50,6 +51,8 @@ class ServerSocket:
         self.UserPool = UserPool()
         self.aes = AesGcmEncryption()
         self.MaskedInput = []
+        self.ri = []
+        self.mij = []
 
     # 监听两个线程
     def listen(self):
@@ -450,15 +453,64 @@ class ServerSocket:
                         print(e)
         except Exception as e:
             print(e)
-        pass
 
     # R3--服务器任务:
-    # 1.根据不同用户集恢复秘密---恢复ri和mij
+    # 1.根据不同用户集恢复秘密---恢复ri和mij----调用ShamirSecretSharing.Reconstruct
     # 2.进行聚合
     # 输入：client_message客户信息列表，t阈值，UserAddress在线用户列表
     # 输出：通过套接字向用户集合分发秘密
-    def server_r3(self,client_message):
-        pass
+    def server_r3(self,client_message,t,UserAddress,UserAddress1,UserAddress2,UserAddress3):
+        try:
+            # 判断在线用户数量
+            if len(UserAddress3) < t:
+                raise Exception('abort')
+            else:
+                n = len(UserAddress)
+                # 生成一个二维数组
+                self.ri = [0]*n
+                self.mij = [[0 for i in range(n)] for j in range(n)]
+                noise_sk_share = [[0 for i in range(n)] for j in range(n)]
+                prf_sk_share = [[0 for i in range(n)] for j in range(n)]
+                # 循环取出客户发送的秘密
+                for i in UserAddress3:
+                    message,abort = self.Data_Decrypt(i,client_message)
+                    m = UserAddress.index(i)+1
+                    if abort is False:
+                        # 获取NoiseOrPrfKeyShare对象列表
+                        unmasking_response = message.unmasking_response().noise_or_prf_key_shares()
+                        # 构造二维数组
+                        for j in UserAddress1:
+                            if j not in UserAddress2:
+                                index = UserAddress.index(j)+1
+                                # r1在线但是r2不在线的用户，获取noise_sk
+                                noise_sk = unmasking_response[index].noise_sk_share()
+                                noise_sk_share[m-1][index-1] = noise_sk
+                            else:
+                                index = UserAddress.index(j)+1
+                                # r2在线用户，获取prf_sk
+                                prf_sk = unmasking_response[index].prf_sk_share()
+                                prf_sk_share[m-1][index-1] = prf_sk
+                    else:
+                        user = self.UserPool.GetUserByAddress(i)
+                        user['status'] = 0
+                # 秘密恢复
+                # noise_sk_share、prf_sk_share此时为二维数组 ,利用zip函数进行转置
+                ss = ShamirSecretSharing()
+                noise_sk_share_aT=list(map(list,zip(*noise_sk_share)))
+                prf_sk_share_aT=list(map(list,zip(*prf_sk_share)))
+                for j in UserAddress1:
+                    if j not in UserAddress2:
+                        index = UserAddress.index(j)+1
+                        # r1在线但是r2不在线的用户，根据noise_sk恢复ski----mij
+                        noise = noise_sk_share_aT[index-1]
+                        ski = ss.Reconstruct(t,noise,32)
+                    else:
+                        index = UserAddress.index(j)+1
+                        # r2在线用户，根据prf_sk恢复出bi-----ri
+                        prf = prf_sk_share_aT[index-1]
+                        bi = ss.Reconstruct(t,prf,32)
+        except Exception as e:
+            print(e)
 
     def GenerateGraph(self):
         pass
