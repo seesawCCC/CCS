@@ -43,7 +43,7 @@ class SecAggClientR3UnmaskingState(SecAggClientAliveBaseState):
             if self.other_client_states[id] ==  OtherClientState.kAlive:
                 self.other_client_states[id] = OtherClientState.kDeadAtRound3
                 number_of_alive_clients = number_of_alive_clients-1
-            elif self.other_client_states[id] ==  OtherClientState.kDeadAtRound3:
+            elif self.other_client_states[id] ==  OtherClientState.kDeadAtRound3:d
                 return self.AbortAndNotifyServer(
                     "The received UnmaskingRequest repeated a client more than once as a dead client.")
             elif self.other_client_states[id] == OtherClientState.kDeadAtRound1:
@@ -52,7 +52,7 @@ class SecAggClientR3UnmaskingState(SecAggClientAliveBaseState):
                 pass
             else:
                 return self.AbortAndNotifyServer(
-                    "The received UnmaskingRequest considers a client dead in round 3 that was already considered dead.");
+                    "The received UnmaskingRequest considers a client dead in round 3 that was already considered dead.")
 
         if number_of_alive_clients <self.minimum_surviving_clients_for_reconstruction:
             return self.AbortAndNotifyServer(
