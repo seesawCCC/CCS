@@ -1,4 +1,4 @@
-from .secagg_client_alive_base_state import SecAggClientAliveBaseState
+ from .secagg_client_alive_base_state import SecAggClientAliveBaseState
 from .secagg_client_terminal_state import SecAggClientCompletedState
 from .secagg_client_terminal_state import SecAggClientAbortedState
 from .secagg_client_state import SecAggClientState
@@ -59,21 +59,26 @@ class SecAggClientR3UnmaskingState(SecAggClientAliveBaseState):
                 "Not enough clients survived. The server should not have sent this UnmaskingRequest.")
 
         message_to_server = ClientToServerWrapperMessage()
-        unmasking_response = UnmaskingResponse.message_to_server.mutable_unmasking_response()
+        unmasking_response = message_to_server.mutable_unmasking_response()
 
         for i in range(self.number_of_clients):
             if self.async_abort and self.async_abort.Signalled():
                 return SecAggClientAliveBaseState.AbortAndNotifyServer(self.async_abort.Message())
             if self.other_client_states[i] == OtherClientState.kAlive:
-                unmasking_response.add_noise_or_prf_key_shares().set_prf_sk_share(self.self_key_shares[i].data)
+                noise_or_prf_key_shares = NoiseOrPrfKeyShare()
+                noise_or_prf_key_shares.set_prf_sk_share(self.self_key_shares[i].data)
+                unmasking_response.add_noise_or_prf_key_shares(noise_or_prf_key_shares)
             elif self.other_client_states[i] == OtherClientState.kDeadAtRound3:
-                unmasking_response.add_noise_or_prf_key_shares().set_noise_sk_share(self.pairwise_key_shares[i].data)
+                noise_or_prf_key_shares = NoiseOrPrfKeyShare()
+                noise_or_prf_key_shares.set_noise_sk_share(self.pairwise_key_shares[i].data)
+                unmasking_response.add_noise_or_prf_key_shares(noise_or_prf_key_shares)
             elif self.other_client_states[i] == OtherClientState.kDeadAtRound1:
-                return 0
+                unmasking_response.add_noise_or_prf_key_shares(None)
             elif self.other_client_states[i] == OtherClientState.kDeadAtRound2:
-                return 0
+                unmasking_response.add_noise_or_prf_key_shares(None)
             else:
-                unmasking_response.add_noise_or_prf_key_shares()
+                noise_or_prf_key_shares = NoiseOrPrfKeyShare()
+                unmasking_response.add_noise_or_prf_key_shares(noise_or_prf_key_shares)
 
         self.sender.Send(message_to_server)
         return SecAggClientCompletedState(self.sender, self.transition_listener)

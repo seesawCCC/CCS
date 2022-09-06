@@ -376,6 +376,12 @@ class PairOfKeyShares:
     def SerializeAsString(self):
         return pickle.dumps(self)
 
+    def ParseFromString(self, string):
+        try:
+            return pickle.loads(string)
+        except Exception as e:
+            return False
+
 class MaskedInputCollectionRequest:
     def __init__(self):
         self._encrypted_key_shares = []
