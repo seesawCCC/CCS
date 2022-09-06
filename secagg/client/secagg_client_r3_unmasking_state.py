@@ -1,3 +1,4 @@
+
 from .secagg_client_alive_base_state import SecAggClientAliveBaseState
 from .secagg_client_terminal_state import SecAggClientCompletedState, SecAggClientAbortedState
 from .secagg_client_state import SecAggClientState
@@ -65,15 +66,20 @@ class SecAggClientR3UnmaskingState(SecAggClientAliveBaseState):
             if self._async_abort and self._async_abort.Signalled():
                 return self.AbortAndNotifyServer(self._async_abort.Message())
             if self.other_client_states[i] == OtherClientState.kAlive:
-                unmasking_response.add_noise_or_prf_key_shares().set_prf_sk_share(self.self_key_shares[i].data)
+                noise_or_prf_key_shares = NoiseOrPrfKeyShare()
+                noise_or_prf_key_shares.set_prf_sk_share(self.self_key_shares[i].data)
+                unmasking_response.add_noise_or_prf_key_shares(noise_or_prf_key_shares)
             elif self.other_client_states[i] == OtherClientState.kDeadAtRound3:
-                unmasking_response.add_noise_or_prf_key_shares().set_noise_sk_share(self.pairwise_key_shares[i].data)
-            # elif self.other_client_states[i] == OtherClientState.kDeadAtRound1:
-            #     return 0
-            # elif self.other_client_states[i] == OtherClientState.kDeadAtRound2:
-            #     return 0
+                noise_or_prf_key_shares = NoiseOrPrfKeyShare()
+                noise_or_prf_key_shares.set_noise_sk_share(self.pairwise_key_shares[i].data)
+                unmasking_response.add_noise_or_prf_key_shares(noise_or_prf_key_shares)
+            elif self.other_client_states[i] == OtherClientState.kDeadAtRound1:
+                unmasking_response.add_noise_or_prf_key_shares(None)
+            elif self.other_client_states[i] == OtherClientState.kDeadAtRound2:
+                unmasking_response.add_noise_or_prf_key_shares(None)
             else:
-                unmasking_response.add_noise_or_prf_key_shares()
+                noise_or_prf_key_shares = NoiseOrPrfKeyShare()
+                unmasking_response.add_noise_or_prf_key_shares(noise_or_prf_key_shares)
 
         self._sender.Send(message_to_server)
         return SecAggClientCompletedState(self._sender, self._transition_listener)

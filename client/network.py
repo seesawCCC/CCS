@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-08-12 21:30:31
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-08-14 17:31:38
+# @Last Modified time: 2022-09-06 21:20:04
 
 import socket
 import traceback
@@ -62,6 +62,8 @@ class Network():
                 cls._instance = super(Network, cls).__new__(cls)
         return cls._instance
 
+    # communication_port, register_port 都是客户端的端口
+    # 对应的服务器地址存储在server_addr中
     def __init__(self, host, communication_port, register_port, server_addr, server_public_key):
         self._host = host
         self._communication_port = communication_port
@@ -82,6 +84,22 @@ class Network():
 
         self._aes_gcm = AesGcmEncryption()
         self._other_client_addrs = []
+
+        self._over = True
+
+
+    def get_message_lock(self):
+        return self._message_list_lock
+
+    def get_receive_messages(self):
+        return self._receive_messages
+
+    def get_client_id(self):
+        return self._client_id
+
+    def isOver(self):
+        return self._over
+
 
     def register(self):
         register_socket = None
@@ -137,6 +155,7 @@ class Network():
                 register_socket.close()
             return server_enc_key
 
+    # 连接服务器的通讯套接字
     def connect_to_server(self):
         try:
             # 生成套接字
@@ -144,6 +163,7 @@ class Network():
             # self._connect_server_socket.settimeout(2.0)
             # 建立TCP连接
             self._connect(self._connect_server_socket, self._server_addr.get_communication_address())
+            self._over = False
             return True
         except Exception as e:
             traceback.print_exc()
@@ -206,9 +226,11 @@ class Network():
                     sock.close()
                 except Exception as e:
                     pass
+        self._over = True
         print('over threading')
 
     def close(self):
+        self._over = True
         if not self._connect_server_socket:
             return None
         try:
@@ -243,3 +265,4 @@ class Network():
         hobj = hashlib.sha256(key)
         hobj.update(data.encode('utf-8'))
         return hobj.hexdigest().upper()[:32]
+

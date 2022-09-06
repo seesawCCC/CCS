@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-08-18 22:11:14
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-08-19 00:30:17
+# @Last Modified time: 2022-09-06 21:06:39
 
 import threading
 from contextlib import contextmanager
@@ -59,6 +59,7 @@ class UserPool():
 			if address in self._user_table:
 				self._user_table.pop(address)
 				return True
+			return False
 
 	def ChangeStatus(self, address, new_status):
 		with self._user_table_mutex.acquire_timeout() as result:
@@ -118,6 +119,5 @@ class UserPool():
 			if not result:
 				return None
 			return self._user_table[address]['socket']
-
 
 

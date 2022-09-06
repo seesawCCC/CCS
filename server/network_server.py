@@ -17,7 +17,7 @@ from secagg.shared.aes_key import AesKey
 from secagg.shared.secagg_messages import ServerToClientWrapperMessage,ShareKeysRequest,MaskedInputCollectionRequest
 from secagg.shared.secagg_messages import UnmaskingRequest
 import os
-from service.user_pool import UserPool
+from server.user_pool import UserPool
 from secagg.shared.shamir_secret_sharing import ShamirSecretSharing
 
 class ServerSocket:

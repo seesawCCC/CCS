@@ -10,6 +10,7 @@ from .client_state import OtherClientState, ClientState
 from ..shared.secagg_vector import SecAggVector
 from ..shared.map_of_masks import MapOfMasks
 from ..shared.aes_gcm_encryption import AesGcmEncryption
+from base.monitoring import FCP_STATUS
 
 class SecAggClientR2MaskedInputCollBaseState(SecAggClientAliveBaseState):
     def __init__(self, sender, transition_listener, async_abort):
@@ -113,18 +114,19 @@ class SecAggClientR2MaskedInputCollBaseState(SecAggClientAliveBaseState):
 
     def SendMaskedInput(self, input_map, map_of_masks):
         # ClientToServerWrapperMessage to_send;
-        # to_send = ClientToServerWrapperMessage()
-        to_send = ' '
+        to_send = ClientToServerWrapperMessage()
+        # to_send = ' '
         # for (auto& pair : *input_map)
         for pair in input_map:
             # SetInput should already have guaranteed these
             # FCP_CHECK(map_of_masks->find(pair.first) != map_of_masks->end())
             # if map_of_masks.find(pair.first) != map_of_masks.end():
-            mask = map_of_masks.at(pair.first)
-            sum = self.AddSecAggVectors(pair.second, mask)
-            sum_vec_proto={}
+            mask = map_of_masks.get(pair, None)
+            FCP_CHECK(mask)
+            sum = self.AddSecAggVectors(input_map[pair], mask)
+            sum_vec_proto = MaskedInputVector()
             sum_vec_proto.set_encoded_vector(sum.TakePackedBytes())
-            (to_send.mutable_masked_input_response().mutable_vectors())[pair.first] = sum_vec_proto;
+            (to_send.mutable_masked_input_response().mutable_vectors())[pair] = sum_vec_proto;
 
         self._sender.Send(to_send)
 
