@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-15 19:51:35
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-09-06 11:44:19
+# @Last Modified time: 2022-09-06 21:00:28
 
 # 等待具体实现时再来重新修改keys.enc_pk()这方面的东西
 from .client_state import ClientState, OtherClientState
@@ -119,8 +119,8 @@ class SecAggClientR1ShareKeysBaseState(SecAggClientAliveBaseState):
 				response.add_encrypted_key_shares("")
 			else:
 				key_shares_pair = PairOfKeyShares()
-				key_shares_pair.set_noise_sk_share(pairwise_prng_key_shares[i].data())
-				key_shares_pair.set_prf_sk_share(self_prng_key_shares[i].data())
+				key_shares_pair.set_noise_sk_share(pairwise_prng_key_shares[i].data)
+				key_shares_pair.set_prf_sk_share(self_prng_key_shares[i].data)
 				serialized_pair = key_shares_pair.SerializeAsString()
 				# print(encryptor.Encrypt(other_client_enc_keys[i], serialized_pair))
 				response.add_encrypted_key_shares(encryptor.Encrypt(other_client_enc_keys[i], serialized_pair))

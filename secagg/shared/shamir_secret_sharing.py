@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-22 17:03:02
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-08-04 13:14:01
+# @Last Modified time: 2022-09-06 21:02:51
 
 # Reconstruct返回的StatusOr还没写
 import random
@@ -65,6 +65,7 @@ class ShamirSecretSharing():
 		while i < len(shares) and len(x_values) < threshold:
 			share_string = shares[i].data
 			if not share_string:
+				i += 1
 				continue
 			assert not len(share_string)%kSubsecretSize, "Share with index {} is invalid: a share of size {} was provided but a multiple of {} is expected".format(i, len(share_string), kSubsecretSize)
 			if num_subsecrets == 0:
