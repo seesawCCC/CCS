@@ -17,8 +17,13 @@ from secagg.shared.aes_key import AesKey
 from secagg.shared.secagg_messages import ServerToClientWrapperMessage,ShareKeysRequest,MaskedInputCollectionRequest
 from secagg.shared.secagg_messages import UnmaskingRequest
 import os
+
+from secagg.shared.secagg_vector import SecAggVector
 from service.user_pool import UserPool
 from secagg.shared.shamir_secret_sharing import ShamirSecretSharing
+from secagg.shared.ecdh_key_agreement import EcdhKeyAgreement
+from secagg.shared.map_of_masks import MapOfMasks
+from secagg.shared.compute_session_id import ComputeSessionId
 
 class ServerSocket:
     def __init__(self, host, communication_port,register_port):
@@ -51,8 +56,9 @@ class ServerSocket:
         self.UserPool = UserPool()
         self.aes = AesGcmEncryption()
         self.MaskedInput = []
-        self.ri = []
-        self.mij = []
+        self.pairs_of_public_keys=[]
+        self.share_keys = ShareKeysRequest()
+
 
     # 监听两个线程
     def listen(self):
@@ -289,6 +295,8 @@ class ServerSocket:
     def Data_Decrypt(self,callback,client_message):
         user = self.UserPool.GetUserByAddress(callback)
         encry_message = client_message[callback]
+        if bool(encry_message):
+            encry_message = encry_message.pop(0)
         enc_key = user['enc_key']
         decry_message = self.aes.Decrypt(enc_key, encry_message)
         message = pickle.loads(decry_message)
@@ -310,21 +318,20 @@ class ServerSocket:
             if len(UserAddress) < t:
                 raise Exception('abort')
             else:
-                # UserAddress = self.UserPool.GetAllUserAddress()
-                pair_of_public_keys = []
                 result = {}
                 # 循环取出客户的两个公钥
                 for i in UserAddress:
                     message,abort = self.Data_Decrypt(i,client_message)
                     if abort is False:  #指代用户在线
                         keys = message.advertise_keys().pair_of_public_keys()
-                        pair_of_public_keys.append(keys)
+                        self.share_keys.add_pairs_of_public_keys(keys)
+                        self.pairs_of_public_keys.append(keys)
                     else:
                         user = self.UserPool.GetUserByAddress(i)
                         user['status'] = 0
-                        pair_of_public_keys.append('')
+                        self.pairs_of_public_keys.append('')
                 Keys = ShareKeysRequest()
-                Keys.set_pairs_of_public_keys(pair_of_public_keys)
+                Keys.set_pairs_of_public_keys(self.pairs_of_public_keys)
                 msg=ServerToClientWrapperMessage()
                 msg.set_share_keys_request(Keys)
                 # 将msg发送至客户套接字   ---msg为ServerToClientWrapperMessage类型
@@ -454,12 +461,26 @@ class ServerSocket:
         except Exception as e:
             print(e)
 
+    # 返回SecAggVector对象
+    def AddSecAggVectors(self, v1, v2):
+        # FCP_CHECK(v1.modulus() == v2.modulus());
+        if v1.modulus() == v2.modulus():
+            modulus = v1.modulus()
+        vec1 = SecAggVector(v1).GetAsUint64Vector()
+        vec2 = SecAggVector(v2).GetAsUint64Vector()
+        # FCP_CHECK(vec1.size() == vec2.size());
+        for i in range(vec1.size()):
+            vec1[i] = ((vec1[i] + vec2[i]) % modulus)
+
+        return SecAggVector(vec1, modulus)
     # R3--服务器任务:
     # 1.根据不同用户集恢复秘密---恢复ri和mij----调用ShamirSecretSharing.Reconstruct
     # 2.进行聚合
     # 输入：client_message客户信息列表，t阈值，UserAddress在线用户列表
     # 输出：通过套接字向用户集合分发秘密
-    def server_r3(self,client_message,t,UserAddress,UserAddress1,UserAddress2,UserAddress3):
+    def server_r3(self,client_message,t,UserAddress,UserAddress1,UserAddress2,UserAddress3,input_vector_specs,
+                     prng_factory, async_abort):
+        sum_vector = {}
         try:
             # 判断在线用户数量
             if len(UserAddress3) < t:
@@ -467,6 +488,8 @@ class ServerSocket:
             else:
                 n = len(UserAddress)
                 # 生成一个二维数组
+                ss = ShamirSecretSharing()
+
                 self.ri = [0]*n
                 self.mij = [[0 for i in range(n)] for j in range(n)]
                 noise_sk_share = [[0 for i in range(n)] for j in range(n)]
@@ -474,43 +497,73 @@ class ServerSocket:
                 # 循环取出客户发送的秘密
                 for i in UserAddress3:
                     message,abort = self.Data_Decrypt(i,client_message)
-                    m = UserAddress.index(i)+1
+                    m = UserAddress.index(i)
                     if abort is False:
                         # 获取NoiseOrPrfKeyShare对象列表
                         unmasking_response = message.unmasking_response().noise_or_prf_key_shares()
                         # 构造二维数组
                         for j in UserAddress1:
                             if j not in UserAddress2:
-                                index = UserAddress.index(j)+1
+                                index = UserAddress.index(j)
                                 # r1在线但是r2不在线的用户，获取noise_sk
                                 noise_sk = unmasking_response[index].noise_sk_share()
-                                noise_sk_share[m-1][index-1] = noise_sk
+                                noise_sk_share[m][index] = noise_sk
                             else:
-                                index = UserAddress.index(j)+1
+                                index = UserAddress.index(j)
                                 # r2在线用户，获取prf_sk
                                 prf_sk = unmasking_response[index].prf_sk_share()
-                                prf_sk_share[m-1][index-1] = prf_sk
+                                prf_sk_share[m][index] = prf_sk
                     else:
                         user = self.UserPool.GetUserByAddress(i)
                         user['status'] = 0
                 # 秘密恢复
                 # noise_sk_share、prf_sk_share此时为二维数组 ,利用zip函数进行转置
-                ss = ShamirSecretSharing()
+                prng_keys_to_add = []
+                prng_keys_to_subtract = []
                 noise_sk_share_aT=list(map(list,zip(*noise_sk_share)))
                 prf_sk_share_aT=list(map(list,zip(*prf_sk_share)))
                 for j in UserAddress1:
                     if j not in UserAddress2:
-                        index = UserAddress.index(j)+1
+                        index = UserAddress.index(j)
                         # r1在线但是r2不在线的用户，根据noise_sk恢复ski----mij
-                        noise = noise_sk_share_aT[index-1]
+                        noise = noise_sk_share_aT[index]
                         ski = ss.Reconstruct(t,noise,32)
+                        KA = EcdhKeyAgreement()
+                        ka = KA.CreateFromPrivateKey(ski).value()
+                        for k in range(len(UserAddress)):
+                            if k!=index:
+                                pk = self.pairs_of_public_keys[k].noise_pk()
+                                if bool(pk):
+                                    sij = KA.ComputeSharedSecret(pk).data()
+                                    # 此处传一个公钥 比较ij后放入add/substract    i----index j----k
+                                    if index > k:
+                                        prng_keys_to_add.append(sij)
+                                    else:
+                                        prng_keys_to_subtract.append(sij)
                     else:
-                        index = UserAddress.index(j)+1
+                        index = UserAddress.index(j)
                         # r2在线用户，根据prf_sk恢复出bi-----ri
-                        prf = prf_sk_share_aT[index-1]
+                        prf = prf_sk_share_aT[index]
                         bi = ss.Reconstruct(t,prf,32)
+                        prng_keys_to_subtract.append(bi)
+                # 计算掩码
+                session_id = ComputeSessionId(self.share_keys)
+                mask = MapOfMasks(prng_keys_to_add,prng_keys_to_subtract, input_vector_specs,
+                                  session_id, prng_factory, async_abort)
+                c_number = len(UserAddress2)
+                for spec in input_vector_specs:
+                    key = spec.name()
+                    for m in self.MaskedInput:
+                        sum_vector[key] = self.AddSecAggVectors(sum_vector[key],m[key])
+                    sum_vector[key] = self.AddSecAggVectors(sum_vector[key],mask[key])
+                    # 计算均值
+                    vec = sum_vector[key].GetAsUint64Vector()
+                    for i in range(vec.size()):
+                        vec[i] = vec[i]/c_number
+                    sum_vector[key] = SecAggVector(vec, vec.modulus)
         except Exception as e:
             print(e)
+        return sum_vector
 
     def GenerateGraph(self):
         pass
