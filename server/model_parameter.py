@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-09-04 21:14:52
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-09-04 23:10:16
+# @Last Modified time: 2022-09-07 17:26:04
 
 import torch
 import ctypes
@@ -52,6 +52,10 @@ class ModelParameter():
 				self._model_state_dict[param_name] = recv_tensor
 			except Exception as e:
 				traceback.print_exc()
+
+	def save(self, path):
+		torch.save(self._model_state_dict, path)
+
 
 
 		
