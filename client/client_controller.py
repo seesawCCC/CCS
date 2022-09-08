@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-09-01 16:15:48
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-09-03 00:32:31
+# @Last Modified time: 2022-09-08 16:29:12
 
 import sys
 
@@ -18,7 +18,7 @@ from secagg.shared.math import RandomString
 from secagg.shared.aes_key import AesKey
 from secagg.shared.secagg_messages import ModelDistributedMessage, ServerToClientWrapperMessage
 from base.monitoring import StatusWarp, FCP_STATUS, StatusCode
-exit(0)
+
 class ClientController():
 	# 初始化函数中负责进行声明,
 	def __init__(self, config):
@@ -42,14 +42,16 @@ class ClientController():
 			return False
 		if len(sys.argv) > 1:
 			client_ip, register_port, communication_port = sys.argv[1:]
+			register_port = int(register_port)
+			communication_port = int(communication_port)
 		else:
 			client_dict = self._config['client']
 			client_ip = client_dict['host']
-			register_port = client_dict['register_port']
-			communication_port = client_dict['communication_port']
+			register_port = int(client_dict['register_port'])
+			communication_port = int(client_dict['communication_port'])
 
 		server_register_dict = self._config['server']
-		server_addr = ServerAddr(server_register_dict['host'], server_register_dict['register_port'])
+		server_addr = ServerAddr(server_register_dict['host'], int(server_register_dict['register_port']))
 		server_public_key = server_register_dict['public_key'].encode('utf-8')
 
 		self._network = Network(client_ip, register_port, communication_port, server_addr, server_public_key)
@@ -93,7 +95,7 @@ class ClientController():
 			# client向服务器注册后一直等待直到服务器分发模型或者训练结束
 			message = self._client_stream.Receive()
 			# 训练任务结束
-			if isinstance(message, TaskOver):
+			if message is None or isinstance(message, TaskOver):
 				self._client_stream.Close()
 				if self._secagg_client:
 					self._secagg_client.Close()
@@ -113,8 +115,11 @@ class ClientController():
 			FCP_CHECK(result.ok())
 			result = self._secagg_client.SetInput(model_parameter)
 			FCP_CHECK(result.ok())
+			timeout = self._config['secagg']['max_timeout']
 			while not self._secagg_client.IsCompletedSuccessfully() and not self._secagg_client.IsAborted():
-				message = self._client_stream.Receive()
+				message = self._client_stream.Receive(timeout)
+				if not message:
+					break
 				if not isinstance(message, ServerToClientWrapperMessage):
 					self._secagg_client.Abort("secagg_client receive wrong message from server")
 				else:

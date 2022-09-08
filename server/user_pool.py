@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-08-18 22:11:14
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-09-06 21:06:39
+# @Last Modified time: 2022-09-08 17:14:01
 
 import threading
 from contextlib import contextmanager
@@ -28,6 +28,14 @@ class TimeoutLock():
 
 
 class UserPool():
+
+	_class_lock = threading.Lock()
+
+	def __new__(cls, *args, **kwargs):
+		with cls._class_lock:
+			if not cls.__dict__.get('_instance', None):
+				cls._instance = super(UserPool, cls).__new__(cls)
+		return cls._instance
 
 	def __init__(self):
 		self._user_table = {}
@@ -118,6 +126,16 @@ class UserPool():
 		with self._user_table_mutex.acquire_timeout() as result:
 			if not result:
 				return None
-			return self._user_table[address]['socket']
+			user = self._user_table.get(address, None)
+			if not user:
+				return user
+			return user['socket']
+
+	def Clear(self):
+		with self._user_table_mutex.acquire_timeout() as result:
+			if not result:
+				return False
+			self._user_table.clear()
+			return True
 
 

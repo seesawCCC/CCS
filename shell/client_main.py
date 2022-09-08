@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-09-03 00:20:37
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-09-03 00:37:10
+# @Last Modified time: 2022-09-07 17:05:18
 
 import sys, os
 
@@ -16,3 +16,5 @@ config_ini = '\\'.join((project_path, 'client', 'config.ini'))
 
 config = Config(config_ini)
 client_controller = ClientController(config)
+
+client_controller.run()

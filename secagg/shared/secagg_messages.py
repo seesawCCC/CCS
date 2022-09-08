@@ -120,10 +120,13 @@ class ModelDistributedMessage():
         return bool(self._specifications)
 
     def set_specifications(self, specifications):
-        for name in specifications:
-            length, modulus = specifications[name]
-            specification = InputVectorSpecification(name, length, modulus)
-            self._specifications.append(specification)
+        if isinstance(specifications, list):
+            self._specifications = specifications
+        else:
+            for name in specifications:
+                length, modulus = specifications[name]
+                specification = InputVectorSpecification(name, length, modulus)
+                self._specifications.append(specification)
 
     def neighboors(self):
         return self._neighboors
