@@ -36,28 +36,23 @@ class SecAggClientR3UnmaskingState(SecAggClientAliveBaseState):
         for i in request.dead_3_client_ids():
             id=i-1
             if id == self.client_id:
-                return self.AbortAndNotifyServer(
-                    "The received UnmaskingRequest states this client has aborted, but this client had not yet aborted.")
+                return self.AbortAndNotifyServer("The received UnmaskingRequest states this client has aborted, but this client had not yet aborted.")
             elif id >= self.number_of_clients:
-                return self.AbortAndNotifyServer(
-                    "The received UnmaskingRequest contains a client id that does correspond to any client.")
+                return self.AbortAndNotifyServer("The received UnmaskingRequest contains a client id that does correspond to any client.")
             if self.other_client_states[id] ==  OtherClientState.kAlive:
                 self.other_client_states[id] = OtherClientState.kDeadAtRound3
                 number_of_alive_clients = number_of_alive_clients-1
-            elif self.other_client_states[id] ==  OtherClientState.kDeadAtRound3:d
-                return self.AbortAndNotifyServer(
-                    "The received UnmaskingRequest repeated a client more than once as a dead client.")
+            elif self.other_client_states[id] ==  OtherClientState.kDeadAtRound3:
+                return self.AbortAndNotifyServer("The received UnmaskingRequest repeated a client more than once as a dead client.")
             elif self.other_client_states[id] == OtherClientState.kDeadAtRound1:
                 pass
             elif self.other_client_states[id] == OtherClientState.kDeadAtRound2:
                 pass
             else:
-                return self.AbortAndNotifyServer(
-                    "The received UnmaskingRequest considers a client dead in round 3 that was already considered dead.")
+                return self.AbortAndNotifyServer("The received UnmaskingRequest considers a client dead in round 3 that was already considered dead.")
 
         if number_of_alive_clients <self.minimum_surviving_clients_for_reconstruction:
-            return self.AbortAndNotifyServer(
-                "Not enough clients survived. The server should not have sent this UnmaskingRequest.")
+            return self.AbortAndNotifyServer("Not enough clients survived. The server should not have sent this UnmaskingRequest.")
 
         message_to_server = ClientToServerWrapperMessage()
         unmasking_response = message_to_server.mutable_unmasking_response()

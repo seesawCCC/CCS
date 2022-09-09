@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-09-01 16:15:48
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-09-08 16:29:12
+# @Last Modified time: 2022-09-09 12:51:35
 
 import sys
 
@@ -18,6 +18,7 @@ from secagg.shared.math import RandomString
 from secagg.shared.aes_key import AesKey
 from secagg.shared.secagg_messages import ModelDistributedMessage, ServerToClientWrapperMessage
 from base.monitoring import StatusWarp, FCP_STATUS, StatusCode
+from base.rsa_encryption import RsaEncryption
 
 class ClientController():
 	# 初始化函数中负责进行声明,
@@ -52,7 +53,7 @@ class ClientController():
 
 		server_register_dict = self._config['server']
 		server_addr = ServerAddr(server_register_dict['host'], int(server_register_dict['register_port']))
-		server_public_key = server_register_dict['public_key'].encode('utf-8')
+		server_public_key = RsaEncryption.server_public_key
 
 		self._network = Network(client_ip, register_port, communication_port, server_addr, server_public_key)
 		enc_key = self._network.register()
@@ -115,7 +116,7 @@ class ClientController():
 			FCP_CHECK(result.ok())
 			result = self._secagg_client.SetInput(model_parameter)
 			FCP_CHECK(result.ok())
-			timeout = self._config['secagg']['max_timeout']
+			timeout = int(self._config['secagg']['max_timeout'])
 			while not self._secagg_client.IsCompletedSuccessfully() and not self._secagg_client.IsAborted():
 				message = self._client_stream.Receive(timeout)
 				if not message:

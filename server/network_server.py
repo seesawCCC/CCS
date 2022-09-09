@@ -18,7 +18,7 @@ from secagg.shared.secagg_messages import ServerToClientWrapperMessage,ShareKeys
 from secagg.shared.secagg_messages import UnmaskingRequest
 import os
 from secagg.shared.secagg_vector import SecAggVector
-from service.user_pool import UserPool
+from server.user_pool import UserPool
 from secagg.shared.shamir_secret_sharing import ShamirSecretSharing
 from secagg.shared.ecdh_key_agreement import EcdhKeyAgreement
 from secagg.shared.map_of_masks import MapOfMasks

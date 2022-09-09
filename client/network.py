@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-08-12 21:30:31
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-09-06 21:20:04
+# @Last Modified time: 2022-09-09 12:47:39
 
 import socket
 import traceback
@@ -104,11 +104,11 @@ class Network():
     def register(self):
         register_socket = None
         server_enc_key = b''
+        
+        register_socket = self._get_socket(self._host, self._register_port)
+        register_socket.settimeout(6.0)
+        FCP_CHECK(self._connect(register_socket, self._server_addr.get_register_address()))
         try:
-            register_socket = self._get_socket(self._host, self._register_port)
-            register_socket.settimeout(6.0)
-            FCP_CHECK(self._connect(register_socket, self._server_addr.get_register_address()))
-
             # message内部数据str只能是unicode(utf-8)
             message = {}
             message['action'] = 1
