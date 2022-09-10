@@ -120,7 +120,7 @@ class SecAggClientR2MaskedInputCollBaseState(SecAggClientAliveBaseState):
             # SetInput should already have guaranteed these
             # FCP_CHECK(map_of_masks->find(pair.first) != map_of_masks->end())
             # if map_of_masks.find(pair.first) != map_of_masks.end():
-            mask = map_of_masks.at(pair.first)
+            mask = map_of_masks[pair.first]
             sum = self.AddSecAggVectors(pair.second, mask)
             sum_vec_proto={}
             sum_vec_proto.set_encoded_vector(sum.TakePackedBytes())

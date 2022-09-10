@@ -20,7 +20,7 @@ import os
 
 from secagg.shared.secagg_vector import SecAggVector
 from service.user_pool import UserPool
-from secagg.shared.shamir_secret_sharing import ShamirSecretSharing
+from secagg.shared.shamir_secret_sharing import ShamirSecretSharing,ShamirShare
 from secagg.shared.ecdh_key_agreement import EcdhKeyAgreement
 from secagg.shared.map_of_masks import MapOfMasks
 from secagg.shared.compute_session_id import ComputeSessionId
@@ -471,7 +471,6 @@ class ServerSocket:
         # FCP_CHECK(vec1.size() == vec2.size());
         for i in range(vec1.size()):
             vec1[i] = ((vec1[i] + vec2[i]) % modulus)
-
         return SecAggVector(vec1, modulus)
     # R3--服务器任务:
     # 1.根据不同用户集恢复秘密---恢复ri和mij----调用ShamirSecretSharing.Reconstruct
@@ -507,12 +506,12 @@ class ServerSocket:
                                 index = UserAddress.index(j)
                                 # r1在线但是r2不在线的用户，获取noise_sk
                                 noise_sk = unmasking_response[index].noise_sk_share()
-                                noise_sk_share[m][index] = noise_sk
+                                noise_sk_share[m][index] = ShamirShare(noise_sk)
                             else:
                                 index = UserAddress.index(j)
                                 # r2在线用户，获取prf_sk
                                 prf_sk = unmasking_response[index].prf_sk_share()
-                                prf_sk_share[m][index] = prf_sk
+                                prf_sk_share[m][index] = ShamirShare(prf_sk)
                     else:
                         user = self.UserPool.GetUserByAddress(i)
                         user['status'] = 0
@@ -534,7 +533,7 @@ class ServerSocket:
                             if k!=index:
                                 pk = self.pairs_of_public_keys[k].noise_pk()
                                 if bool(pk):
-                                    sij = KA.ComputeSharedSecret(pk).data()
+                                    sij = ka.ComputeSharedSecret(pk).data()
                                     # 此处传一个公钥 比较ij后放入add/substract    i----index j----k
                                     if index > k:
                                         prng_keys_to_add.append(sij)

@@ -3,6 +3,7 @@ from .secagg_client_terminal_state import SecAggClientCompletedState
 from .secagg_client_terminal_state import SecAggClientAbortedState
 from .secagg_client_state import SecAggClientState
 from .client_state import OtherClientState
+from ..shared.secagg_messages import ClientToServerWrapperMessage,UnmaskingResponse
 
 class SecAggClientR3UnmaskingState(SecAggClientAliveBaseState):
     def __init__(self, client_id, number_of_alive_clients, sender, minimum_surviving_clients_for_reconstruction, number_of_clients, other_client_states, pairwise_key_shares, self_key_shares, transition_listener, async_abort):
@@ -24,7 +25,7 @@ class SecAggClientR3UnmaskingState(SecAggClientAliveBaseState):
                 return SecAggClientCompletedState(self.sender, self.transition_listener)
             else:
                 return SecAggClientAbortedState("Aborting because of abort message from the server.", self.sender, self.transition_listener)
-        elif message.has_unmasking_request() !=1:
+        elif message.has_unmasking_request() !=True:
             return SecAggClientState.HandleMessage(message)
         if self.async_abort and self.async_abort.Signalled():
             return SecAggClientAliveBaseState.AbortAndNotifyServer(self.async_abort.Message())
@@ -59,7 +60,7 @@ class SecAggClientR3UnmaskingState(SecAggClientAliveBaseState):
                 "Not enough clients survived. The server should not have sent this UnmaskingRequest.")
 
         message_to_server = ClientToServerWrapperMessage()
-        unmasking_response = UnmaskingResponse.message_to_server.mutable_unmasking_response()
+        unmasking_response = UnmaskingResponse()
 
         for i in range(self.number_of_clients):
             if self.async_abort and self.async_abort.Signalled():
