@@ -34,20 +34,40 @@ class RsaEncryption:
         return private_key,public_key
 
     # plaintext类型为bytes，public_key用于加密,返回值encrypt_text为bytes
-    def Encrypt(self, public_key, plaintext):
+    def Encrypt(self, public_key, plaintext,length=100):
+        msg=base64.b64encode(plaintext).decode()
         public_key = RSA.importKey(public_key)
         cipher = PKCS1_cipher.new(public_key)  # 生成一个加密的类
         # plaintext.encode()--str->bytes 进行加密 ;加密后再进行编码
-        encrypt_text = base64.b64encode(cipher.encrypt(plaintext))  # 对数据进行加密
-        # encrypt_text = encrypt_text.decode()  # 对文本进行解码
+        # encrypt_text = base64.b64encode(cipher.encrypt(plaintext))  # 对数据进行加密
+        res = []
+        for i in range(0, len(msg), length):
+            res.append(cipher.encrypt(msg[i:i + length].encode()))
+        encrypt_text = b"".join(res)
         return encrypt_text
 
     # ciphertext类型为bytes，private_key用于解密,返回值decrypt_text为bytes
-    def Decrypt(self, private_key, ciphertext):
+    def Decrypt(self, private_key, ciphertext,default_length=128):
+        length = len(ciphertext)
+        print(length)
+        # default_length = 256
+        # 私钥解密
         private_key = RSA.importKey(private_key)
         cipher = PKCS1_cipher.new(private_key)  # 生成一个解密的类
-        decrypt_text = cipher.decrypt(base64.b64decode(ciphertext.decode()), 0)  # 先解码再进行解密
-        # decrypt_text = decrypt_text.decode()  # 对文本内容进行解码
+        # 长度不用分段
+        if length < default_length:
+            return b''.join(cipher.decrypt(ciphertext, b'ubout'))
+        # 需要分段
+        offset = 0
+        res = []
+        while length - offset > 0:
+            if length - offset > default_length:
+                res.append(cipher.decrypt(ciphertext[offset:offset + default_length], b'ubout'))
+            else:
+                res.append(cipher.decrypt(ciphertext[offset:], b'ubout'))
+            offset += default_length
+            m = b''.join(res)
+        decrypt_text = base64.b64decode(m)
         return decrypt_text
 
     # 数字签名，使用私钥对数据进行签名，data为bytes类型

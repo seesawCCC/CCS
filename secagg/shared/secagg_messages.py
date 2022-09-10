@@ -24,6 +24,7 @@ class ClientToServerWrapperMessage:
         return self._abort
 
     def has_abort(self):
+        # 调用为True，代表用户掉线，False代表用户在线
         return bool(self._abort)
 
     def set_abort(self,abort):
@@ -467,6 +468,8 @@ class UnmaskingResponse:
         self._noise_or_prf_key_shares = noise_or_prf_key_shares[:]
 
     def mutable_noise_or_prf_key_shares(self):
+        if not self._noise_or_prf_key_shares:
+            self._noise_or_prf_key_shares = NoiseOrPrfKeyShare()
         return self.noise_or_prf_key_shares()
 
     def add_noise_or_prf_key_shares(self, item=b''):
@@ -475,8 +478,8 @@ class UnmaskingResponse:
 
 class NoiseOrPrfKeyShare:
     def __init__(self):
-        self._noise_sk_share = 0
-        self._prf_sk_share = 0
+        self._noise_sk_share = None
+        self._prf_sk_share = None
 
     def noise_sk_share(self):
         return self._noise_sk_share

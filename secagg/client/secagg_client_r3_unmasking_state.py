@@ -25,7 +25,7 @@ class SecAggClientR3UnmaskingState(SecAggClientAliveBaseState):
                 return SecAggClientCompletedState(self._sender, self._transition_listener)
             else:
                 return SecAggClientAbortedState("Aborting because of abort message from the server.", self._sender, self._transition_listener)
-        elif message.has_unmasking_request() !=1:
+        elif not message.has_unmasking_request():
             return super().HandleMessage(message)
         if self._async_abort and self._async_abort.Signalled():
             return self.AbortAndNotifyServer(self._async_abort.Message())
