@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-08-17 17:31:35
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-09-08 16:27:18
+# @Last Modified time: 2022-09-12 21:18:31
 import pickle, traceback, time
 from collections import OrderedDict
 
@@ -48,6 +48,7 @@ class ClientStream():
 			# print(int(time.time())-start)
 			server_message = self.receive_from_socket()
 			if server_message or self._network.isOver():
+				print('stream recv ', server_message)
 				break
 			time.sleep(1) 
 		return server_message
@@ -63,7 +64,6 @@ class ClientStream():
 					try:
 						decry_message = self._aes_gcm.Decrypt(self._enc_key, encry_message)
 						message = pickle.loads(decry_message)
-						# print(message)
 					except Exception as e:
 						traceback.print_exc()
 					else:

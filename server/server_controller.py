@@ -2,11 +2,12 @@
 # @Author: gonglinxiao
 # @Date:   2022-09-07 16:43:55
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-09-08 17:07:40
+# @Last Modified time: 2022-09-12 23:57:52
 
 import os, time
 import pickle
 import random
+import traceback	
 from .network_server import ServerSocket
 from .user_pool import UserPool
 from .model_parameter import ModelParameter
@@ -39,7 +40,7 @@ class ServerController():
 		host = server_dict['host']
 		register_port = int(server_dict['register_port'])
 		communication_port = int(server_dict['communication_port'])
-		self._waitting_for_enough_clients_timeout = server_dict['waitting_for_enough_clients_timeout']
+		self._waitting_for_enough_clients_timeout = int(server_dict['waitting_for_enough_clients_timeout'])
 		self._network = ServerSocket(host, communication_port, register_port)
 		self._network.listen()
 
@@ -71,12 +72,17 @@ class ServerController():
 		for i in range(len(user_list)):
 			user_callback = user_list[i]
 			user = self._user_pool.GetUserByAddress(user_callback)
-			enc_key = user['enc_key']
-			encry_message = self._network.aes.Encrypt(enc_key, pickle.dumps(message))
-			socket = self._user_pool.GetSocket(user_callback)
-			try:
-				socket.sendall(encry_message)
-			except Exception as e:
+			if user:
+				enc_key = user['enc_key']
+				encry_message = self._network.aes.Encrypt(enc_key, pickle.dumps(message))
+				socket = self._user_pool.GetSocket(user_callback)
+				try:
+					self._network.send(socket, encry_message)
+					# socket.sendall(encry_message)
+				except Exception as e:
+					traceback.print_exc()
+					need_pop.append(i)
+			else:
 				need_pop.append(i)
 
 		success_user_list = user_list
@@ -95,22 +101,27 @@ class ServerController():
 
 		# 用户池的消息每轮开始时都会清空
 		client_message = self.wait_for_secagg(init_user_list, self._secagg_max_timeout)
+		print(client_message)
 		user_address = list(client_message.keys())
 		self.checkout_user_list(init_user_list, user_address)
 		try: 
+			print('start r0')
 			self._network.server_r0(client_message, self._minimum_surviving_clients_for_reconstruction, user_address)
 
-			client_message = self.wait_for_secagg(init_user_list)
+			print('start r1')
+			client_message = self.wait_for_secagg(init_user_list, self._secagg_max_timeout)
 			user_address_1 = list(client_message.keys())
 			self.checkout_user_list(user_address, user_address_1)
 			self._network.server_r1(client_message, self._minimum_surviving_clients_for_reconstruction, user_address, user_address_1)
 
-			client_message = self.wait_for_secagg(init_user_list)
+			print('start r2')
+			client_message = self.wait_for_secagg(init_user_list, self._secagg_max_timeout)
 			user_address_2 = list(client_message.keys())
 			self.checkout_user_list(user_address_1, user_address_2)
 			self._network.server_r2(client_message, self._minimum_surviving_clients_for_reconstruction, user_address, user_address_1, user_address_2)
 
-			client_message = self.wait_for_secagg(init_user_list)
+			print('start r3')
+			client_message = self.wait_for_secagg(init_user_list, self._secagg_max_timeout)
 			user_address_3 = list(client_message.keys())			
 			input_vector_specs = self._model_parameter.get_specifications()
 			prng_factory = AesCtrPrngFactory()
@@ -161,7 +172,7 @@ class ServerController():
 		client_message = {}
 		while user_sum < user_num and int(time.time())-curtime<max_timeout:
 			for user in user_list:
-				messages = self.client_message.get(user, [])
+				messages = self._network.client_message.get(user, [])
 				if messages:
 					client_message[user] = [messages.pop(0)]
 					user_sum += 1
@@ -171,23 +182,27 @@ class ServerController():
 
 	def run(self):
 		for i in range(self._model_train_round):
-			curtime = int(time.time())
-			init_user_list = self._user_pool.GetAllUserAddress()
-			while int(time.time())-curtime < self._waitting_for_enough_clients_timeout and len(init_user_list) < self._min_clients_to_start:
+			curtime = int(time.time()) 
+			while int(time.time())-curtime < self._waitting_for_enough_clients_timeout and len(self._user_pool.GetAllUserAddress()) < self._min_clients_to_start:
 				time.sleep(1)
+			init_user_list = self._user_pool.GetAllUserAddress()
 			if len(init_user_list) < self._min_clients_to_start:
 				print('no enough clients, server over')
 				return False
 			if len(init_user_list) > self._max_clients_expected:
 				init_user_list = random.sample(init_user_list, self._max_clients_expected)
 			self.refresh_user_pool()
+			time.sleep(1)
+			print(i, ' start deliever model')
 			init_user_list = self.deliever_model(init_user_list)
+			print(i, ' start secagg')
 			sum_vector = self.secagg(init_user_list)
 			if not sum_vector:
 				print(r'secagg failed, get a {}')
 				break
 			self._model_parameter.set_model_parameter(sum_vector)
 
+		print('over')
 		self.send_over(self._user_pool.GetAllUserAddress(), 'train over')
 
 		model_dict = self._config['model']
@@ -195,5 +210,5 @@ class ServerController():
 		model_save_path = model_save_path if os.path.isabs(model_save_path) else '\\'.join((os.path.dirname(__file__), model_save_path))
 		self._model_parameter.save(model_save_path)
 
-		
-
+	def close(self):
+		self._network.Close()

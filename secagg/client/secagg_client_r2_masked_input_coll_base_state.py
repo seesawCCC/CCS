@@ -10,6 +10,7 @@ from .client_state import OtherClientState, ClientState
 from ..shared.secagg_vector import SecAggVector
 from ..shared.map_of_masks import MapOfMasks
 from ..shared.aes_gcm_encryption import AesGcmEncryption
+from ..shared.secagg_messages import PairOfKeyShares
 from base.monitoring import FCP_STATUS
 
 class SecAggClientR2MaskedInputCollBaseState(SecAggClientAliveBaseState):
@@ -54,19 +55,19 @@ class SecAggClientR2MaskedInputCollBaseState(SecAggClientAliveBaseState):
             else:
                 # A living client1 sent encrypted key shares, so we decrypt and store them.
                 decrypted = decryptor.Decrypt(other_client_enc_keys[i], request.encrypted_key_shares(i))
-                if decrypted.ok() is False:
-                    error_message = "Authentication of encrypted data failed."
-                    return None;
-                else:
-                    plaintext = decrypted.value()
-
+                # if decrypted.ok() is False:
+                #     error_message = "Authentication of encrypted data failed."
+                #     return None;
+                # else:
+                #     plaintext = decrypted.value()
+                plaintext = decrypted
                 # PairOfKeyShares pairwise_and_self_key_shares;
                 pairwise_and_self_key_shares = PairOfKeyShares()
                 if pairwise_and_self_key_shares.ParseFromString(plaintext) is False:
                     error_message = "Unable to parse decrypted pair of key shares."
                     return None
-                pairwise_key_shares.push_back({pairwise_and_self_key_shares.noise_sk_share()})
-                self_key_shares.push_back({pairwise_and_self_key_shares.prf_sk_share()})
+                pairwise_key_shares.append({pairwise_and_self_key_shares.noise_sk_share()})
+                self_key_shares.append({pairwise_and_self_key_shares.prf_sk_share()})
 
         if number_of_alive_clients < minimum_surviving_clients_for_reconstruction :
             error_message = "There are not enough clients to complete this protocol session. Aborting."
@@ -74,24 +75,24 @@ class SecAggClientR2MaskedInputCollBaseState(SecAggClientAliveBaseState):
 
         # std::vector<AesKey> prng_keys_to_add;
         # std::vector<AesKey> prng_keys_to_subtract;
-        prng_keys_to_add = {}
-        prng_keys_to_subtract = {}
+        prng_keys_to_add = []
+        prng_keys_to_subtract = []
 
-        prng_keys_to_add.push_back(self_prng_key)
+        prng_keys_to_add.append(self_prng_key)
 
         for i in range(number_of_clients):
-            if self.async_abort and self.async_abort.Signalled():
-                error_message = self.async_abort.Message()
+            if self._async_abort and self._async_abort.Signalled():
+                error_message = self._async_abort.Message()
                 return None
             if i == client_id or other_client_states[i] != OtherClientState.kAlive:
                 continue
             elif i < client_id:
-                prng_keys_to_add.push_back(other_client_prng_keys[i])
+                prng_keys_to_add.append(other_client_prng_keys[i])
             else:
-                prng_keys_to_subtract.push_back(other_client_prng_keys[i])
+                prng_keys_to_subtract.append(other_client_prng_keys[i])
 
         map_ = MapOfMasks(prng_keys_to_add, prng_keys_to_subtract, input_vector_specs,
-               session_id, prng_factory, self.async_abort)
+               session_id, prng_factory, self._async_abort)
 
         if map_ is False:
             error_message = self._async_abort.Message()

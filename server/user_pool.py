@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-08-18 22:11:14
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-09-08 17:14:01
+# @Last Modified time: 2022-09-11 23:38:44
 
 import threading
 from contextlib import contextmanager
@@ -89,7 +89,12 @@ class UserPool():
 		with self._user_table_mutex.acquire_timeout() as result:
 			if not result:
 				return []
-			return list(self._user_table.keys())
+			all_user = []
+			for callback in self._user_table:
+				if self._user_table[callback]['connection']:
+					all_user.append(callback)
+			# return list(self._user_table.keys())
+			return all_user
 
 	def GetAllUser(self):
 		with self._user_table_mutex.acquire_timeout() as result:
@@ -138,4 +143,9 @@ class UserPool():
 			self._user_table.clear()
 			return True
 
+	def SetConnection(self, callback, status):
+		with self._user_table_mutex.acquire_timeout() as result:
+			if not result:
+				return None
+			self._user_table[callback]['connection'] = status
 

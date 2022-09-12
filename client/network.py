@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-08-12 21:30:31
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-09-09 12:47:39
+# @Last Modified time: 2022-09-12 21:18:46
 
 import socket
 import traceback
@@ -141,7 +141,7 @@ class Network():
             # reply = json.loads(reply_json)
             server_enc_key = decry_reply['enc_key']
 
-            self._client_id = decry_reply['client_id']
+            self._client_id = decry_reply['clientId']
             callback = decry_reply['callback']
             self._server_addr.set_communication_address(callback)
             # hash_str = self._compute_hash(reply['enc_key'], ','.join(callback, reply['client_id']))
@@ -160,7 +160,7 @@ class Network():
         try:
             # 生成套接字
             self._connect_server_socket = self._get_socket(self._host, self._communication_port)
-            # self._connect_server_socket.settimeout(2.0)
+            # self._connect_server_socket.settimeout(1.0)
             # 建立TCP连接
             self._connect(self._connect_server_socket, self._server_addr.get_communication_address())
             self._over = False
@@ -174,7 +174,10 @@ class Network():
 
     def send_to_server(self, data):
         try:
-            self._connect_server_socket.sendall(data)
+            length = len(data)
+            length_bytes = length.to_bytes(4, 'little')
+            message = length_bytes+data
+            self._connect_server_socket.sendall(message)
             return True
         except Exception as e:
             traceback.print_exc()
@@ -203,7 +206,7 @@ class Network():
                     excepts.remove(sock)
                 else:
                     try:
-                        data = sock.recv(4096)
+                        data = self._recv_from_socket(sock)
                         if data:
                             with self._message_list_lock:
                                 self._receive_messages.append(data)
@@ -266,3 +269,19 @@ class Network():
         hobj.update(data.encode('utf-8'))
         return hobj.hexdigest().upper()[:32]
 
+    def _recv_from_socket(self, socket_):
+        length_limit = 4096
+        data = b''
+
+        recv_data = socket_.recv(length_limit)
+        if recv_data:
+            data_length = int.from_bytes(recv_data[:4], 'little')
+            data += recv_data[4:]
+        else:
+            return data
+
+        while len(data) < data_length:
+            recv_data = socket_.recv(length_limit)
+            data += recv_data
+
+        return data

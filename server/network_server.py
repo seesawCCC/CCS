@@ -11,6 +11,7 @@ import time
 import threading
 import random
 import pickle
+import traceback
 from base.rsa_encryption import RsaEncryption
 from secagg.shared.aes_gcm_encryption import AesGcmEncryption
 from secagg.shared.aes_key import AesKey
@@ -57,7 +58,7 @@ class ServerSocket:
         self.MaskedInput = []
         self.pairs_of_public_keys=[]
         self.share_keys = ShareKeysRequest()
-
+        self.session_id = None
 
     # 监听两个线程
     def listen(self):
@@ -77,23 +78,21 @@ class ServerSocket:
         excepts = [register_socket]
         while inputs:
             # time.sleep(1)
-            print('start select')
-            print("client_message-----",self.client_message)
-            print(inputs)
             readable, writeable, exception = select.select(inputs, outputs, excepts)
-            print(readable)
-            if readable:
-                print(readable)
+            # print('start register')
+            # print("client_message-----",self.client_message)
+            # if readable:
+            #     print(readable)
             for sock in readable:
                 if getattr(sock, '_closed'):
-                    print('Threading: this socket is closed', sock)
+                    # print('Threading: this socket is closed', sock)
                     inputs.remove(sock)
                     excepts.remove(sock)
                     continue
                 # 服务器套接字
                 if sock is register_socket:
                     client_socket, client_address = sock.accept()
-                    print(client_address, ' start link')
+                    # print(client_address, ' start link')
                     client_tag = ''.join([str(item) for item in client_address])
                     # 将客户套接字存入input
                     inputs.append(client_socket)
@@ -106,7 +105,7 @@ class ServerSocket:
                         data = sock.recv(4096)
                         if data:
                             # print(pickle.loads(data))
-                            print(data)
+                            # print(data)
                             # 此处调用data_process()
                             result = self.data_process_1(data)
                             sock.sendall(result)
@@ -125,9 +124,9 @@ class ServerSocket:
                         # outputs.remove(sock)
                         excepts.remove(sock)
 
-            if exception:
-                print('some socket exception')
-                print(exception)
+            # if exception:
+            #     print('some socket exception')
+            #     print(exception)
             for sock in exception:
                 if sock is register_socket:
                     print('server exception')
@@ -151,14 +150,14 @@ class ServerSocket:
         excepts = [communication_socket]
         while inputs:
             # time.sleep(1)
-            print('start select')
-            print("client_message-----",self.client_message)
-            print(inputs)
             readable, writeable, exception = select.select(inputs, outputs, excepts)
-            print(readable)
-            if readable:
-                print(readable)
+            # print('start communication')
+            # print("communication client_message-----",self.client_message)
+            # print(inputs)
+            # if readable:
+            #     print(readable)
             for sock in readable:
+                print('communication', sock)
                 if getattr(sock, '_closed'):
                     print('Threading: this socket is closed', sock)
                     inputs.remove(sock)
@@ -167,11 +166,12 @@ class ServerSocket:
                 # 服务器套接字
                 if sock is communication_socket:
                     client_socket, client_address = sock.accept()
+                    callback = '{}:{}'.format(*client_address)
                     # 提前判断client_address是否已注册
-                    existed = self.UserPool.existed(client_address)
+                    # existed = self.UserPool.existed(client_address)
+                    existed = self.UserPool.existed(callback)
                     if existed:
                         callback = "{}:{}".format(*client_address)
-                        self.UserPool.SetSocket(callback,client_socket)
                         print(client_address, ' start link')
                         # client_tag = ''.join([str(item) for item in client_address])
                         print("client_tag",callback)
@@ -181,11 +181,15 @@ class ServerSocket:
                         inputs.append(client_socket)
                         # outputs.append(client_socket)
                         excepts.append(client_socket)
+                        self.UserPool.SetSocket(callback,client_socket)
+                        self.UserPool.SetConnection(callback, True)
                 # 客户套接字
                 else:
+                    print('communication recv data from ', sock)
                     try:
                         # 从套接字中取出数据
-                        data = sock.recv(4096)
+                        # data = sock.recv(4096)
+                        data = self.recv(sock)
                         if data:
                             # sock.send(b'ok')
                             with self.message_lock:
@@ -212,9 +216,9 @@ class ServerSocket:
                         # outputs.remove(sock)
                         excepts.remove(sock)
 
-            if exception:
-                print('some socket exception')
-                print(exception)
+            # if exception:
+            #     print('some socket exception')
+            #     print(exception)
             for sock in exception:
                 if sock is communication_socket:
                     print('server exception')
@@ -280,6 +284,7 @@ class ServerSocket:
         msg['status'] = 0
         msg['last_nonce'] = client_nonce
         msg['socket'] = None
+        msg['connection'] = False
         # 在用户池中添加用户
         self.UserPool.AddUser(client_callback,msg)
 
@@ -329,14 +334,18 @@ class ServerSocket:
                         user = self.UserPool.GetUserByAddress(i)
                         user['status'] = 0
                         self.pairs_of_public_keys.append('')
+                self.session_id = ComputeSessionId(self.share_keys)
                 Keys = ShareKeysRequest()
                 Keys.set_pairs_of_public_keys(self.pairs_of_public_keys)
+                Keys.set_session_id(self.session_id.data)
                 msg=ServerToClientWrapperMessage()
                 msg.set_share_keys_request(Keys)
+                
+
                 # 将msg发送至客户套接字   ---msg为ServerToClientWrapperMessage类型
                 result['data'] = msg
-                result['action'] = 0
-                result ['time'] = int(time.time()) + random.randint(1, 4096)
+                result['action'] = 4
+                result ['time'] = int(time.time())
                 for j in UserAddress:
                     user = self.UserPool.GetUserByAddress(j)
                     enc_key = user['enc_key']
@@ -344,7 +353,8 @@ class ServerSocket:
                         sock = self.UserPool.GetSocket(j)
                         # 序列化之后进行enc_key加密
                         encry_message = self.aes.Encrypt(enc_key,pickle.dumps(result))
-                        sock.send(encry_message)
+                        # sock.send(encry_message)
+                        self.send(sock, encry_message)
                     except Exception as e:
                         self.UserPool.Remove(j)
                         print(e)
@@ -391,15 +401,16 @@ class ServerSocket:
                     msg.set_masked_input_request(MaskedInput)
                     # 将msg发送至客户套接字   ---msg为ServerToClientWrapperMessage类型
                     result['data'] = msg
-                    result['action'] = 1
-                    result ['time'] = int(time.time()) + random.randint(1, 4096)
+                    result['action'] = 4
+                    result ['time'] = int(time.time())
                     user = self.UserPool.GetUserByAddress(j)
                     enc_key = user['enc_key']
                     try:
                         sock = self.UserPool.GetSocket(j)
                         # 序列化之后进行enc_key加密
                         encry_message = self.aes.Encrypt(enc_key,pickle.dumps(result))
-                        sock.send(encry_message)
+                        # sock.send(encry_message)
+                        self.send(sock, encry_message)
                     except Exception as e:
                         self.UserPool.Remove(j)
                         print(e)
@@ -444,8 +455,8 @@ class ServerSocket:
                 # 将msg发送至客户套接字   ---msg为ServerToClientWrapperMessage类型
                 result = {}
                 result['data'] = msg
-                result['action'] = 2
-                result ['time'] = int(time.time()) + random.randint(1, 4096)
+                result['action'] = 4
+                result ['time'] = int(time.time())
                 for k in UserAddress2:
                     user = self.UserPool.GetUserByAddress(k)
                     enc_key = user['enc_key']
@@ -453,7 +464,8 @@ class ServerSocket:
                         sock = self.UserPool.GetSocket(k)
                         # 序列化之后进行enc_key加密
                         encry_message = self.aes.Encrypt(enc_key,pickle.dumps(result))
-                        sock.send(encry_message)
+                        # sock.send(encry_message)
+                        self.send(sock, encry_message)
                     except Exception as e:
                         self.UserPool.Remove(k)
                         print(e)
@@ -545,7 +557,9 @@ class ServerSocket:
                         bi = ss.Reconstruct(t,prf,32)
                         prng_keys_to_subtract.append(bi)
                 # 计算掩码
-                session_id = ComputeSessionId(self.share_keys)
+                session_id = self.session_id
+                if not session_id:                
+                    session_id = ComputeSessionId(self.share_keys)
                 mask = MapOfMasks(prng_keys_to_add,prng_keys_to_subtract, input_vector_specs,
                                   session_id, prng_factory, async_abort)
                 c_number = len(UserAddress2)
@@ -566,3 +580,35 @@ class ServerSocket:
     def GenerateGraph(self):
         pass
 
+    def Close(self):
+        self._close_socket(self.register_socket)
+        self._close_socket(self.communication_socket)
+
+    def _close_socket(self, socket):
+        try:
+            socket.close()
+        except Exception as e:
+            print(e)
+            return False
+        return True
+
+    def send(self, socket_, message):
+        message_length = len(message)
+        length_bytes = message_length.to_bytes(4, 'little')
+        message = length_bytes + message
+        socket_.sendall(message)
+
+    def recv(self, socket_):
+        length_limit = 4096
+        data = b''
+        recv_data = socket_.recv(length_limit)
+        if recv_data:
+            data_length = int.from_bytes(recv_data[:4], 'little')
+            data += recv_data[4:]
+        else:
+            return recv_data
+
+        while len(data) < data_length:
+            recv_data = socket_.recv(length_limit)
+            data += recv_data
+        return data        

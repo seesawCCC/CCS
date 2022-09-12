@@ -2,9 +2,9 @@
 # @Author: gonglinxiao
 # @Date:   2022-09-01 16:15:48
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-09-09 12:51:35
+# @Last Modified time: 2022-09-12 20:48:58
 
-import sys
+import sys, traceback
 
 from .network import Network, ServerAddr
 from .client_stream import ClientStream, TaskOver
@@ -17,7 +17,7 @@ from secagg.shared.aes_ctr_prng_factory import AesCtrPrngFactory
 from secagg.shared.math import RandomString
 from secagg.shared.aes_key import AesKey
 from secagg.shared.secagg_messages import ModelDistributedMessage, ServerToClientWrapperMessage
-from base.monitoring import StatusWarp, FCP_STATUS, StatusCode
+from base.monitoring import StatusWarp, FCP_STATUS, StatusCode, FCP_CHECK
 from base.rsa_encryption import RsaEncryption
 
 class ClientController():
@@ -55,8 +55,9 @@ class ClientController():
 		server_addr = ServerAddr(server_register_dict['host'], int(server_register_dict['register_port']))
 		server_public_key = RsaEncryption.server_public_key
 
-		self._network = Network(client_ip, register_port, communication_port, server_addr, server_public_key)
+		self._network = Network(client_ip, communication_port, register_port, server_addr, server_public_key)
 		enc_key = self._network.register()
+		print(enc_key)
 		if not enc_key:
 			raise Exception('register failed, get a empty enc key.')
 		self._network.connect_to_server()
@@ -79,7 +80,7 @@ class ClientController():
 	def init_secagg_client(self, input_vector_specs, abort_signal_for_test=None):
 		max_clients_expected = self._max_clients_expected
 		minimum_surviving_clients_for_reconstruction = self._minimum_surviving_clients_for_reconstruction
-		seed_bytes = math.RandomString(AesKey.kSize)
+		seed_bytes = RandomString(AesKey.kSize)
 		seed = AesKey(seed_bytes)
 		prng = AesCtrPrng(seed)
 		transition_listener = StateTransitionListenerInterface()
@@ -94,7 +95,9 @@ class ClientController():
 		# 等待服务器发送模型参数
 		while True:
 			# client向服务器注册后一直等待直到服务器分发模型或者训练结束
+			print('start receive model from server')
 			message = self._client_stream.Receive()
+			print('receive model from server ', message)
 			# 训练任务结束
 			if message is None or isinstance(message, TaskOver):
 				self._client_stream.Close()
@@ -104,7 +107,11 @@ class ClientController():
 			# 模型分发阶段
 			elif isinstance(message, ModelDistributedMessage):
 				self.set_model_parameter(message)
-				self._model_controller.Train()
+				try:
+					self._model_controller.Train()
+				except Exception as e:
+					traceback.print_exc()
+					break
 				model_parameter = self._model_controller.GetModelParameter()
 			else:
 				self.close()
@@ -112,19 +119,24 @@ class ClientController():
 
 			# 开始安全聚合
 			self.init_secagg_client(message.specifications())
+			print('init secagg client')
 			result = self._secagg_client.Start()
+			print('r0 over get ', result.value())
 			FCP_CHECK(result.ok())
 			result = self._secagg_client.SetInput(model_parameter)
 			FCP_CHECK(result.ok())
 			timeout = int(self._config['secagg']['max_timeout'])
+			print('complete r0, ready to r1')
 			while not self._secagg_client.IsCompletedSuccessfully() and not self._secagg_client.IsAborted():
 				message = self._client_stream.Receive(timeout)
+				print(type(message), message)
 				if not message:
 					break
 				if not isinstance(message, ServerToClientWrapperMessage):
 					self._secagg_client.Abort("secagg_client receive wrong message from server")
 				else:
 					result = self._secagg_client.ReceiveMessage(message)
+					print('handle message. result: ', result.value())
 					FCP_CHECK(result.ok())
 		self.close()
 

@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-08-31 10:52:31
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-08-31 23:28:58
+# @Last Modified time: 2022-09-12 00:21:58
 
 import torch
 
@@ -22,7 +22,7 @@ class DynamicNet(BaseModel):
 		# 输入和输出层是固定的，但是中间层的个数是随机的(0,1,2)， 		# 并且中间层的参数是共享的。 		
 		# 因为每次计算的计算图是动态(实时)构造的， 		# 所以我们可以使用普通的Python流程控制代码比如for循环 		# 来实现。读者可以尝试一下怎么用TensorFlow来实现。 		# 另外一点就是一个Module可以多次使用，这样就 		# 可以实现参数共享。 		
 		h_relu = self.input_linear(x).clamp(min=0)
-		for _ in range(random.randint(0, 3)):
+		for _ in range(random.randint(1, 3)):
 			h_relu = self.middle_linear(h_relu).clamp(min=0)
 			y_pred = self.output_linear(h_relu)
 		return y_pred

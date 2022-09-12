@@ -49,7 +49,6 @@ class RsaEncryption:
     # ciphertext类型为bytes，private_key用于解密,返回值decrypt_text为bytes
     def Decrypt(self, private_key, ciphertext,default_length=128):
         length = len(ciphertext)
-        print(length)
         # default_length = 256
         # 私钥解密
         private_key = RSA.importKey(private_key)
