@@ -148,6 +148,7 @@ class ServerSocket:
         inputs = [communication_socket]
         outputs = []
         excepts = [communication_socket]
+        need_close=[]
         while inputs:
             # time.sleep(1)
             readable, writeable, exception = select.select(inputs, outputs, excepts)
@@ -159,9 +160,15 @@ class ServerSocket:
             for sock in readable:
                 print('communication', sock)
                 if getattr(sock, '_closed'):
-                    print('Threading: this socket is closed', sock)
-                    inputs.remove(sock)
-                    excepts.remove(sock)
+                    if sock is communication_socket:
+                        inputs.remove(sock)
+                        excepts.remove(sock)
+                        need_close = inputs[:]
+                        inputs.clear()
+                    else:
+                        print('Threading: this socket is closed', sock)
+                        inputs.remove(sock)
+                        excepts.remove(sock)
                     continue
                 # 服务器套接字
                 if sock is communication_socket:
@@ -234,6 +241,8 @@ class ServerSocket:
                 with self.message_lock:
                     self.client_message.pop(sock)
                 sock.close()
+        for sock in need_close:
+            sock.close()
         print('ok, threading over')
 
     # action1--服务器任务:
