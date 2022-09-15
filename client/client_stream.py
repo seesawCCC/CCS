@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-08-17 17:31:35
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-09-12 21:18:31
+# @Last Modified time: 2022-09-15 14:31:34
 import pickle, traceback, time
 from collections import OrderedDict
 
@@ -15,6 +15,9 @@ class TaskOver():
 	def __init__(self, message):
 		self.message = message
 
+class ServerNetWorkOver(Exception):
+    def __str__(self):
+        return 'connection to server\' communication socket has been closed'
 
 class ClientStream():
 
@@ -46,9 +49,9 @@ class ClientStream():
 		server_message = None
 		while not timeout or int(time.time())-start <= timeout:
 			# print(int(time.time())-start)
+			self._check_connect()
 			server_message = self.receive_from_socket()
-			if server_message or self._network.isOver():
-				print('stream recv ', server_message)
+			if server_message:
 				break
 			time.sleep(1) 
 		return server_message
@@ -114,4 +117,4 @@ class ClientStream():
 
 	def _check_connect(self):
 		if self._network.isOver():
-			raise Exception('connection to server\' communication socket has been closed')
+			raise ServerNetWorkOver()

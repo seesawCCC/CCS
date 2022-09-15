@@ -39,14 +39,14 @@ class SecAggClientR2MaskedInputCollInputSetState(SecAggClientR2MaskedInputCollBa
     def HandleMessage(self,message):
         if message.has_abort() :
             if message.abort().early_success():
-                return SecAggClientCompletedState(self.sender, self.transition_listener)
+                return SecAggClientCompletedState(self._sender, self._transition_listener)
             else:
-                return SecAggClientAbortedState("Aborting because of abort message from the server.",self.sender, self.transition_listener)
+                return SecAggClientAbortedState("Aborting because of abort message from the server.",self._sender, self._transition_listener)
         elif message.has_masked_input_request() is False:
             # Returns an error indicating that the message is of invalid type.
-            return SecAggClientState.HandleMessage(message)
+            return super().HandleMessage(message)
         request = message.masked_input_request()
-        error_message = ''
+        error_message = ['']
         pairwise_key_shares = []
         self_key_shares = []
 
@@ -55,14 +55,13 @@ class SecAggClientR2MaskedInputCollInputSetState(SecAggClientR2MaskedInputCollBa
                                                                           self.other_client_enc_keys, self.other_client_prng_keys,
                                                                           self.own_self_key_share, self.self_prng_key, self.session_id, self.prng_factory,
                                                                           self.number_of_alive_clients, self.other_client_states, pairwise_key_shares, self_key_shares, error_message)
-        if map_of_masks is False:
-            return SecAggClientAliveBaseState.AbortAndNotifyServer(error_message)
+        if not map_of_masks:
+            return self.AbortAndNotifyServer(error_message[0])
 
         self.SendMaskedInput(self.input_map,map_of_masks)
 
-        return SecAggClientR3UnmaskingState(self.client_id, self.number_of_alive_clients, self.minimum_surviving_clients_for_reconstruction,
-                                            self.number_of_clients, self.other_client_states, pairwise_key_shares, self_key_shares,
-                                            self.sender, self.transition_listener, self.async_abort)
+        return SecAggClientR3UnmaskingState(self.client_id, self.number_of_alive_clients, self._sender, self.minimum_surviving_clients_for_reconstruction,
+                                            self.number_of_clients, self.other_client_states, pairwise_key_shares, self_key_shares, self._transition_listener, self._async_abort)
 
 
     def StateName(self):

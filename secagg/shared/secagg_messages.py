@@ -319,6 +319,9 @@ class ShareKeysRequest:
     def add_pairs_of_public_keys(self, item):
         self._pairs_of_public_keys.append(item)
 
+    def clear_pairs_of_public_keys(self):
+        self._pairs_of_public_keys.clear()
+
     def sec_agg_execution_logging_id(self):
         return self._sec_agg_execution_logging_id
 
@@ -382,7 +385,10 @@ class PairOfKeyShares:
 
     def ParseFromString(self, string):
         try:
-            return pickle.loads(string)
+            pair_of_key_shares = pickle.loads(string)
+            self.set_noise_sk_share(pair_of_key_shares.noise_sk_share())
+            self.set_prf_sk_share(pair_of_key_shares.prf_sk_share())
+            return True
         except Exception as e:
             return False
 

@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-08-12 21:30:31
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-09-12 21:18:46
+# @Last Modified time: 2022-09-13 18:40:53
 
 import socket
 import traceback
@@ -98,8 +98,7 @@ class Network():
         return self._client_id
 
     def isOver(self):
-        return self._over
-
+        return self._over or getattr(self._connect_server_socket, '_closed')
 
     def register(self):
         register_socket = None
@@ -214,11 +213,13 @@ class Network():
                             # 服务器关闭了连接
                             raise CloseSocketException(sock.getsockname())
                     except Exception as e:
+                        print('the socket is closed ', sock)
                         need_closed.append(sock)
                         inputs.remove(sock)
                         excepts.remove(sock)
 
             for sock in exception:
+                print('exception: ', sock)
                 excepts.remove(sock)
                 inputs.remove(sock)
                 need_closed.append(sock)
@@ -226,9 +227,10 @@ class Network():
             for sock in need_closed:
                 try:
                     sock.shutdown(socket.SHUT_RDWR)
-                    sock.close()
                 except Exception as e:
                     pass
+                finally:
+                    sock.close()
         self._over = True
         print('over threading')
 
@@ -239,10 +241,10 @@ class Network():
         try:
             if not getattr(self._connect_server_socket, '_closed'):
                 self._connect_server_socket.shutdown(socket.SHUT_RDWR)
-            self._connect_server_socket.close()
         except Exception as e:
             traceback.print_exc()
         finally:
+            self._connect_server_socket.close()
             self._connect_server_socket = None
 
     def _connect(self, socket_, addr):

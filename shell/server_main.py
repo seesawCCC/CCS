@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-09-08 17:01:03
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-09-12 23:58:23
+# @Last Modified time: 2022-09-13 10:46:45
 
 import sys, os, traceback
 file_abs_path = __file__
@@ -23,6 +23,7 @@ server_controller = ServerController(config)
 try:
 	server_controller.run()
 except Exception as e:
-	server_controller.close()
 	traceback.print_exc()
+finally:
+	server_controller.close()
 	exit(1)

@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-15 19:51:35
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-09-06 21:00:28
+# @Last Modified time: 2022-09-15 16:35:03
 
 # 等待具体实现时再来重新修改keys.enc_pk()这方面的东西
 from .client_state import ClientState, OtherClientState
@@ -52,6 +52,7 @@ class SecAggClientR1ShareKeysBaseState(SecAggClientAliveBaseState):
 			return False
 		r1_delivered_message.number_of_alive_clients = request_public_keys_length 
 		r1_delivered_message.number_of_clients = request_public_keys_length
+		# print('r1 request_public_keys_length', request_public_keys_length)
 		client_id_set = False
 		self.SetUpShares(minimum_surviving_clients_for_reconstruction, r1_delivered_message.number_of_clients, prng_key_agreement.PrivateKey(), self_prng_key, \
 					r1_delivered_message.self_prng_key_shares, r1_delivered_message.pairwise_prng_key_shares)

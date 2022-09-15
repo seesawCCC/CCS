@@ -85,7 +85,6 @@ class ServerSocket:
             #     print(readable)
             for sock in readable:
                 if getattr(sock, '_closed'):
-                    # print('Threading: this socket is closed', sock)
                     inputs.remove(sock)
                     excepts.remove(sock)
                     continue
@@ -116,8 +115,8 @@ class ServerSocket:
                             raise Exception('no data, need to be closed')
                     # raise Exception('close the socket')
                     except Exception as e:
-                        print(e)
-                        print(sock, ' need to be closed')
+                        # print(e)
+                        # print(sock, ' need to be closed')
                         sock.shutdown(socket.SHUT_RDWR)
                         sock.close()
                         inputs.remove(sock)
@@ -129,16 +128,14 @@ class ServerSocket:
             #     print(exception)
             for sock in exception:
                 if sock is register_socket:
-                    print('server exception')
                     # 关了所有的连接
                     register_socket.close()
                     exit(-1)
-                print(sock, 'in exceptions')
                 excepts.remove(sock)
                 # outputs.remove(sock)
                 inputs.remove(sock)
                 sock.close()
-        print('ok, threading over')
+        print('ok, register threading over')
 
 
     # 通信线程
@@ -158,15 +155,15 @@ class ServerSocket:
             # if readable:
             #     print(readable)
             for sock in readable:
-                print('communication', sock)
                 if getattr(sock, '_closed'):
                     if sock is communication_socket:
                         inputs.remove(sock)
                         excepts.remove(sock)
                         need_close = inputs[:]
                         inputs.clear()
+                        break
                     else:
-                        print('Threading: this socket is closed', sock)
+                        # print('Threading: this socket is closed', sock)
                         inputs.remove(sock)
                         excepts.remove(sock)
                     continue
@@ -181,7 +178,6 @@ class ServerSocket:
                         callback = "{}:{}".format(*client_address)
                         print(client_address, ' start link')
                         # client_tag = ''.join([str(item) for item in client_address])
-                        print("client_tag",callback)
                         socket_table[client_socket] = callback
                         self.client_message[callback] = []
                         # 将客户套接字存入input
@@ -192,7 +188,6 @@ class ServerSocket:
                         self.UserPool.SetConnection(callback, True)
                 # 客户套接字
                 else:
-                    print('communication recv data from ', sock)
                     try:
                         # 从套接字中取出数据
                         # data = sock.recv(4096)
@@ -211,8 +206,8 @@ class ServerSocket:
                             raise Exception('no data, need to be closed')
                     # raise Exception('close the socket')
                     except Exception as e:
-                        print(e)
-                        print(sock, ' need to be closed')
+                        # print(e)
+                        # print(sock, ' need to be closed')
                         sock.shutdown(socket.SHUT_RDWR)
                         sock.close()
                         # 调用socket_table
@@ -228,11 +223,9 @@ class ServerSocket:
             #     print(exception)
             for sock in exception:
                 if sock is communication_socket:
-                    print('server exception')
                     # 关了所有的连接
                     communication_socket.close()
                     exit(-1)
-                print(sock, 'in exceptions')
                 excepts.remove(sock)
                 # outputs.remove(sock)
                 inputs.remove(sock)
@@ -242,8 +235,13 @@ class ServerSocket:
                     self.client_message.pop(sock)
                 sock.close()
         for sock in need_close:
-            sock.close()
-        print('ok, threading over')
+            try:
+                sock.shutdown(socket.SHUT_RDWR)
+            except Exception as e:
+                pass
+            finally:
+                sock.close()
+        print('ok, communication threading over')
 
     # action1--服务器任务:
     # 1.处理客户注册，使用数字签名验证身份，利用私钥解密数据
@@ -326,6 +324,8 @@ class ServerSocket:
     # 输入：client_message客户信息列表，t阈值, UserAddress是在线用户的回调地址列表
     # 输出：通过套接字向用户集合分发公钥
     def server_r0(self,client_message,t,UserAddress):
+        self.pairs_of_public_keys.clear()
+        self.share_keys.clear_pairs_of_public_keys()
         try:
             # 判断在线用户数量
             if len(UserAddress) < t:
@@ -358,6 +358,8 @@ class ServerSocket:
                 for j in UserAddress:
                     user = self.UserPool.GetUserByAddress(j)
                     enc_key = user['enc_key']
+                    if user['status'] != 1:
+                        continue
                     try:
                         sock = self.UserPool.GetSocket(j)
                         # 序列化之后进行enc_key加密
@@ -414,6 +416,8 @@ class ServerSocket:
                     result ['time'] = int(time.time())
                     user = self.UserPool.GetUserByAddress(j)
                     enc_key = user['enc_key']
+                    if user['status'] != 1:
+                        continue
                     try:
                         sock = self.UserPool.GetSocket(j)
                         # 序列化之后进行enc_key加密
@@ -443,7 +447,7 @@ class ServerSocket:
                 for i in UserAddress2:
                     message,abort = self.Data_Decrypt(i,client_message)
                     if abort is False:
-                        #masked为掩码,服务器存储掩码
+                        #masked为掩码,服务器存储掩码 {}
                         masked = message.masked_input_response().vectors()
                         self.MaskedInput.append(masked)
                     else:
@@ -469,6 +473,8 @@ class ServerSocket:
                 for k in UserAddress2:
                     user = self.UserPool.GetUserByAddress(k)
                     enc_key = user['enc_key']
+                    if user['status'] != 1:
+                        continue
                     try:
                         sock = self.UserPool.GetSocket(k)
                         # 序列化之后进行enc_key加密
@@ -489,7 +495,7 @@ class ServerSocket:
         vec1 = SecAggVector(v1).GetAsUint64Vector()
         vec2 = SecAggVector(v2).GetAsUint64Vector()
         # FCP_CHECK(vec1.size() == vec2.size());
-        for i in range(vec1.size()):
+        for i in range(len(vec1)):
             vec1[i] = ((vec1[i] + vec2[i]) % modulus)
         return SecAggVector(vec1, modulus)
     # R3--服务器任务:
@@ -511,8 +517,8 @@ class ServerSocket:
 
                 self.ri = [0]*n
                 self.mij = [[0 for i in range(n)] for j in range(n)]
-                noise_sk_share = [[0 for i in range(n)] for j in range(n)]
-                prf_sk_share = [[0 for i in range(n)] for j in range(n)]
+                noise_sk_share = [[ShamirShare(b'') for i in range(n)] for j in range(n)]
+                prf_sk_share = [[ShamirShare(b'') for i in range(n)] for j in range(n)]
                 # 循环取出客户发送的秘密
                 for i in UserAddress3:
                     message,abort = self.Data_Decrypt(i,client_message)
@@ -546,25 +552,28 @@ class ServerSocket:
                         index = UserAddress.index(j)
                         # r1在线但是r2不在线的用户，根据noise_sk恢复ski----mij
                         noise = noise_sk_share_aT[index]
-                        ski = ss.Reconstruct(t,noise,32)
-                        KA = EcdhKeyAgreement()
-                        ka = KA.CreateFromPrivateKey(ski).value()
+                        ski = ss.Reconstruct(t,noise,399)
+                        ka = EcdhKeyAgreement.CreateFromPrivateKey(ski).value()
                         for k in range(len(UserAddress)):
                             if k!=index:
                                 pk = self.pairs_of_public_keys[k].noise_pk()
                                 if bool(pk):
-                                    sij = ka.ComputeSharedSecret(pk).data()
+                                    edch = ka.ComputeSharedSecret(pk)
+                                    if edch.ok():
+                                        sij = edch.value().data()
+                                    else:
+                                        raise Exception('ComputeSharedSecret error', edch.reason())
                                     # 此处传一个公钥 比较ij后放入add/substract    i----index j----k
                                     if index > k:
-                                        prng_keys_to_add.append(sij)
+                                        prng_keys_to_add.append(AesKey(sij))
                                     else:
-                                        prng_keys_to_subtract.append(sij)
+                                        prng_keys_to_subtract.append(AesKey(sij))
                     else:
                         index = UserAddress.index(j)
                         # r2在线用户，根据prf_sk恢复出bi-----ri
                         prf = prf_sk_share_aT[index]
                         bi = ss.Reconstruct(t,prf,32)
-                        prng_keys_to_subtract.append(bi)
+                        prng_keys_to_subtract.append(AesKey(bi))
                 # 计算掩码
                 session_id = self.session_id
                 if not session_id:                
@@ -572,18 +581,23 @@ class ServerSocket:
                 mask = MapOfMasks(prng_keys_to_add,prng_keys_to_subtract, input_vector_specs,
                                   session_id, prng_factory, async_abort)
                 c_number = len(UserAddress2)
+                if not c_number:
+                    return sum_vector
                 for spec in input_vector_specs:
                     key = spec.name()
                     for m in self.MaskedInput:
-                        sum_vector[key] = self.AddSecAggVectors(sum_vector[key],m[key])
+                        if key not in sum_vector:
+                            sum_vector[key] = m[key]
+                        else:
+                            sum_vector[key] = self.AddSecAggVectors(sum_vector[key],m[key])
                     sum_vector[key] = self.AddSecAggVectors(sum_vector[key],mask[key])
                     # 计算均值
                     vec = sum_vector[key].GetAsUint64Vector()
-                    for i in range(vec.size()):
-                        vec[i] = vec[i]/c_number
-                    sum_vector[key] = SecAggVector(vec, vec.modulus)
+                    for i in range(len(vec)):
+                        vec[i] = vec[i]//c_number
+                    sum_vector[key] = SecAggVector(vec, sum_vector[key].modulus())
         except Exception as e:
-            print(e)
+            traceback.print_exc()
         return sum_vector
 
     def GenerateGraph(self):
@@ -592,6 +606,7 @@ class ServerSocket:
     def Close(self):
         self._close_socket(self.register_socket)
         self._close_socket(self.communication_socket)
+        print('close the server listen socket')
 
     def _close_socket(self, socket):
         try:

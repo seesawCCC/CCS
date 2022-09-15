@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-09-07 16:43:55
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-09-12 23:57:52
+# @Last Modified time: 2022-09-15 13:25:53
 
 import os, time
 import pickle
@@ -101,32 +101,35 @@ class ServerController():
 
 		# 用户池的消息每轮开始时都会清空
 		client_message = self.wait_for_secagg(init_user_list, self._secagg_max_timeout)
-		print(client_message)
 		user_address = list(client_message.keys())
+		print(user_address)
 		self.checkout_user_list(init_user_list, user_address)
 		try: 
 			print('start r0')
 			self._network.server_r0(client_message, self._minimum_surviving_clients_for_reconstruction, user_address)
 
 			print('start r1')
-			client_message = self.wait_for_secagg(init_user_list, self._secagg_max_timeout)
+			client_message = self.wait_for_secagg(user_address, self._secagg_max_timeout)
 			user_address_1 = list(client_message.keys())
+			print(user_address_1)
 			self.checkout_user_list(user_address, user_address_1)
 			self._network.server_r1(client_message, self._minimum_surviving_clients_for_reconstruction, user_address, user_address_1)
 
 			print('start r2')
-			client_message = self.wait_for_secagg(init_user_list, self._secagg_max_timeout)
+			client_message = self.wait_for_secagg(user_address_1, self._secagg_max_timeout)
 			user_address_2 = list(client_message.keys())
+			print(user_address_2)
 			self.checkout_user_list(user_address_1, user_address_2)
 			self._network.server_r2(client_message, self._minimum_surviving_clients_for_reconstruction, user_address, user_address_1, user_address_2)
 
 			print('start r3')
-			client_message = self.wait_for_secagg(init_user_list, self._secagg_max_timeout)
+			client_message = self.wait_for_secagg(user_address_2, self._secagg_max_timeout)
 			user_address_3 = list(client_message.keys())			
+			print(user_address_3)
 			input_vector_specs = self._model_parameter.get_specifications()
 			prng_factory = AesCtrPrngFactory()
 			sum_vector = self._network.server_r3(client_message, self._minimum_surviving_clients_for_reconstruction, user_address, user_address_1, user_address_2, user_address_3, input_vector_specs, prng_factory, None)
-
+			print('secagg over')
 			return sum_vector
 		except Exception as e: 
 			print(e)
@@ -160,7 +163,8 @@ class ServerController():
 			socket = user_info['socket']
 			enc_key = user_info['enc_key']
 			encry_message = self._network.aes.Encrypt(enc_key, pickle.dumps(message))
-			socket.sendall(encry_message)
+			# socket.sendall(encry_message)
+			self._network.send(socket, encry_message)
 
 
 	# 等待最大时间或者user_list的用户都已经发送了数据
@@ -179,9 +183,14 @@ class ServerController():
 			time.sleep(1) 
 		return client_message 
 
+	def init_client_message(self):
+		for callback in self._network.client_message:
+			self._network.client_message[callback].clear()
+
 
 	def run(self):
 		for i in range(self._model_train_round):
+			print('start run {} round'.format(i))
 			curtime = int(time.time()) 
 			while int(time.time())-curtime < self._waitting_for_enough_clients_timeout and len(self._user_pool.GetAllUserAddress()) < self._min_clients_to_start:
 				time.sleep(1)
@@ -194,12 +203,13 @@ class ServerController():
 			self.refresh_user_pool()
 			time.sleep(1)
 			print(i, ' start deliever model')
+			self.init_client_message()
 			init_user_list = self.deliever_model(init_user_list)
 			print(i, ' start secagg')
 			sum_vector = self.secagg(init_user_list)
 			if not sum_vector:
 				print(r'secagg failed, get a {}')
-				break
+				continue
 			self._model_parameter.set_model_parameter(sum_vector)
 
 		print('over')
@@ -211,4 +221,5 @@ class ServerController():
 		self._model_parameter.save(model_save_path)
 
 	def close(self):
+		print('start close _network')
 		self._network.Close()

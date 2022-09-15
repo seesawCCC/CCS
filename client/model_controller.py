@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-08-31 13:32:27
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-09-04 23:12:17
+# @Last Modified time: 2022-09-14 17:12:41
 
 import importlib
 import inspect
@@ -60,8 +60,8 @@ class ModelController():
 			parameter_tensor = model_state_dict.get(name, None)
 			parameter_list = []
 			if parameter_tensor is not None:
-				parameter_list = parameter_tensor.view(1,-1).tolist()[0]
-				parameter_list = list(map(lambda x: ctypes.c_ulong(int(x*self._integerization)).value, parameter_list))
+				ori_parameter_list = parameter_tensor.view(1,-1).tolist()[0]
+				parameter_list = list(map(lambda x: ctypes.c_ulong(int(self._handle_nan_and_inf(x)*self._integerization)).value, ori_parameter_list))
 			secagg_vector = SecAggVector(parameter_list, modulus)
 			input_map[name] = secagg_vector
 		return input_map
@@ -74,3 +74,11 @@ class ModelController():
 		model_state_dict = self.__train_model.state_dict()
 		torch.save(model_state_dict, path)
 
+	def _handle_nan_and_inf(self, number):
+		if number == float('inf'):
+			number = 1
+		elif number == float('-inf'):
+			number = -1
+		elif not float('-inf') < number < float('inf'):
+			number = 0
+		return number

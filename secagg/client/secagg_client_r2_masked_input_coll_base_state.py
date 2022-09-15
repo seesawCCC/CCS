@@ -10,8 +10,9 @@ from .client_state import OtherClientState, ClientState
 from ..shared.secagg_vector import SecAggVector
 from ..shared.map_of_masks import MapOfMasks
 from ..shared.aes_gcm_encryption import AesGcmEncryption
-from ..shared.secagg_messages import PairOfKeyShares
-from base.monitoring import FCP_STATUS
+from ..shared.secagg_messages import PairOfKeyShares, ClientToServerWrapperMessage
+from ..shared.shamir_secret_sharing import ShamirShare
+from base.monitoring import FCP_STATUS, FCP_CHECK
 
 class SecAggClientR2MaskedInputCollBaseState(SecAggClientAliveBaseState):
     def __init__(self, sender, transition_listener, async_abort):
@@ -22,7 +23,7 @@ class SecAggClientR2MaskedInputCollBaseState(SecAggClientAliveBaseState):
                                            other_client_enc_keys, other_client_prng_keys, own_self_key_share, self_prng_key,session_id,prng_factory,
                                            number_of_alive_clients,other_client_states,pairwise_key_shares,self_key_shares,error_message):
         if request.encrypted_key_shares_size() != number_of_clients:
-            error_message ="The number of encrypted shares sent by the server does not match the number of clients."
+            error_message[0] ="The number of encrypted shares sent by the server does not match the number of clients."
             return None
 
         # Parse the request, decrypt and store the key shares from other clients.
@@ -31,26 +32,26 @@ class SecAggClientR2MaskedInputCollBaseState(SecAggClientAliveBaseState):
         plaintext = ""
         for i in range(number_of_clients):
             if self._async_abort and self._async_abort.Signalled():
-                error_message = self._async_abort.Message()
+                error_message[0] = self._async_abort.Message()
                 return None
 
             if i == client_id :
                 # this client1
-                pairwise_key_shares.append('')
+                pairwise_key_shares.append(ShamirShare(b''))
                 self_key_shares.append(own_self_key_share)
             elif other_client_states[i] != OtherClientState.kAlive:
                 if len(request.encrypted_key_shares(i)) > 0:
                     # A client1 who was considered aborted sent key shares.
-                    error_message = "Received encrypted key shares from an aborted client1."
+                    error_message[0] = "Received encrypted key shares from an aborted client1."
                     return None
                 else:
-                    pairwise_key_shares.append('')
-                    self_key_shares.append('')
+                    pairwise_key_shares.append(ShamirShare(b''))
+                    self_key_shares.append(ShamirShare(b''))
             elif len(request.encrypted_key_shares(i)) == 0:
                 # A client1 who was considered alive dropped out. Mark it as dead.
                 other_client_states[i] = OtherClientState.kDeadAtRound2
-                pairwise_key_shares.append('')
-                self_key_shares.append('')
+                pairwise_key_shares.append(ShamirShare(b''))
+                self_key_shares.append(ShamirShare(b''))
                 number_of_alive_clients = number_of_alive_clients-1
             else:
                 # A living client1 sent encrypted key shares, so we decrypt and store them.
@@ -64,13 +65,13 @@ class SecAggClientR2MaskedInputCollBaseState(SecAggClientAliveBaseState):
                 # PairOfKeyShares pairwise_and_self_key_shares;
                 pairwise_and_self_key_shares = PairOfKeyShares()
                 if pairwise_and_self_key_shares.ParseFromString(plaintext) is False:
-                    error_message = "Unable to parse decrypted pair of key shares."
+                    error_message[0] = "Unable to parse decrypted pair of key shares."
                     return None
-                pairwise_key_shares.append({pairwise_and_self_key_shares.noise_sk_share()})
-                self_key_shares.append({pairwise_and_self_key_shares.prf_sk_share()})
+                pairwise_key_shares.append(ShamirShare(pairwise_and_self_key_shares.noise_sk_share()))
+                self_key_shares.append(ShamirShare(pairwise_and_self_key_shares.prf_sk_share()))
 
         if number_of_alive_clients < minimum_surviving_clients_for_reconstruction :
-            error_message = "There are not enough clients to complete this protocol session. Aborting."
+            error_message[0] = "There are not enough clients to complete this protocol session. Aborting."
             return None
 
         # std::vector<AesKey> prng_keys_to_add;
@@ -82,7 +83,7 @@ class SecAggClientR2MaskedInputCollBaseState(SecAggClientAliveBaseState):
 
         for i in range(number_of_clients):
             if self._async_abort and self._async_abort.Signalled():
-                error_message = self._async_abort.Message()
+                error_message[0] = self._async_abort.Message()
                 return None
             if i == client_id or other_client_states[i] != OtherClientState.kAlive:
                 continue
@@ -94,8 +95,8 @@ class SecAggClientR2MaskedInputCollBaseState(SecAggClientAliveBaseState):
         map_ = MapOfMasks(prng_keys_to_add, prng_keys_to_subtract, input_vector_specs,
                session_id, prng_factory, self._async_abort)
 
-        if map_ is False:
-            error_message = self._async_abort.Message()
+        if not map_:
+            error_message[0] = self._async_abort.Message()
             return None
         return map_
 
@@ -108,7 +109,7 @@ class SecAggClientR2MaskedInputCollBaseState(SecAggClientAliveBaseState):
         vec1 = SecAggVector(v1).GetAsUint64Vector()
         vec2 = SecAggVector(v2).GetAsUint64Vector()
         # FCP_CHECK(vec1.size() == vec2.size());
-        for i in range(vec1.size()):
+        for i in range(len(vec1)):
             vec1[i] = ((vec1[i] + vec2[i]) % modulus)
 
         return SecAggVector(vec1, modulus)
@@ -125,8 +126,9 @@ class SecAggClientR2MaskedInputCollBaseState(SecAggClientAliveBaseState):
             mask = map_of_masks.get(pair, None)
             FCP_CHECK(mask)
             sum = self.AddSecAggVectors(input_map[pair], mask)
-            sum_vec_proto = MaskedInputVector()
-            sum_vec_proto.set_encoded_vector(sum.TakePackedBytes())
+            # sum_vec_proto = MaskedInputVector()
+            # sum_vec_proto.set_encoded_vector(sum.TakePackedBytes())
+            sum_vec_proto = sum
             (to_send.mutable_masked_input_response().mutable_vectors())[pair] = sum_vec_proto;
 
         self._sender.Send(to_send)

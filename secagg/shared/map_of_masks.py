@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-30 15:50:40
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-08-04 13:09:13
+# @Last Modified time: 2022-09-13 10:56:36
 import hashlib
 
 import secagg.shared.math as math
@@ -81,6 +81,8 @@ class PrngBuffer():
 		output = self._buffer[self._buffer_ptr]&self._msb_mask
 		self._buffer_ptr += 1
 		for i in range(self._bytes_per_output):
+			if self._buffer_ptr == self._buffer_end:
+				self._FillBuffer()
 			output <<= 8
 			output |= self._buffer[self._buffer_ptr]
 			self._buffer_ptr += 1
@@ -107,7 +109,7 @@ class AddModAdapter():
 
 	@staticmethod
 	def SubtractModImpl(a, b, z):
-		return math.SubtractModOpt(a, b, z)
+		return math.SubtractMod(a, b, z)
 
 def MapOfMasksImpl(prng_keys_to_add, prng_keys_to_subtract, input_vector_specs, session_id, prng_factory, async_abort, rt_class):
 	# print(prng_keys_to_add, prng_keys_to_subtract, input_vector_specs, session_id, prng_factory)
@@ -115,6 +117,7 @@ def MapOfMasksImpl(prng_keys_to_add, prng_keys_to_subtract, input_vector_specs, 
 
 	map_of_masks = SecAggVectorMap()
 	for vector_spec in input_vector_specs:
+
 		if async_abort and async_abort.Signalled():
 			return None
 		bit_width = math.BitWidth(vector_spec.modulus()-1)

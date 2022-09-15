@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-22 17:03:02
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-09-06 21:02:51
+# @Last Modified time: 2022-09-15 16:52:15
 
 # Reconstruct返回的StatusOr还没写
 import random
@@ -60,6 +60,10 @@ class ShamirSecretSharing():
 		max_num_subsecrets = ((8*secret_length)+kSubsecretSize-1)//kSubsecretSize
 		num_subsecrets = 0
 		x_values = []
+
+		self._inverses.clear()
+		self._last_lc_input.clear()
+		self._last_lc_output.clear()
 
 		i = 0
 		while i < len(shares) and len(x_values) < threshold:
@@ -165,8 +169,10 @@ class ShamirSecretSharing():
 				secret[i] <<= 8-bits_done
 				secret[i] |= next_low_bits
 			i -= 1
-		secret = [chr(item).encode('utf8') for item in secret]
-		return b''.join(secret)
+
+		secret = [int.to_bytes(item, 1, 'little') for item in secret]
+		secret_str = b''.join(secret)
+		return secret_str
 
 	def _RandomFieldElement(self):
 		rand = 0

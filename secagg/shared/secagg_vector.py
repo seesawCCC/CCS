@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-07-19 18:10:57
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-09-01 10:51:26
+# @Last Modified time: 2022-09-15 16:49:38
 
 # FCP_CHECK到时用一个Logger代替算了
 
@@ -218,10 +218,10 @@ class SecAggVector():
 		target._branchless_codec = self._branchless_codec
 		target._packed_bytes = self._packed_bytes
 		target._chr_width = self._chr_width
-		self._modulus = 0
-		self._bit_width = 0
-		self._num_elements = 0
-		self._branchless_codec = False
+		# self._modulus = 0
+		# self._bit_width = 0
+		# self._num_elements = 0
+		# self._branchless_codec = False
 
 	def _CheckHasValue(self):
 		assert self._modulus > 0, "SecAggVector has no value"

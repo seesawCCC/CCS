@@ -2,13 +2,13 @@
 from .secagg_client_alive_base_state import SecAggClientAliveBaseState
 from .secagg_client_terminal_state import SecAggClientCompletedState, SecAggClientAbortedState
 from .secagg_client_state import SecAggClientState
-from .client_state import OtherClientState
-from ..shared.secagg_messages import ClientToServerWrapperMessage
+from .client_state import OtherClientState, ClientState
+from ..shared.secagg_messages import ClientToServerWrapperMessage, NoiseOrPrfKeyShare
 from base.monitoring import FCP_CHECK, StatusWarp
 
 class SecAggClientR3UnmaskingState(SecAggClientAliveBaseState):
     def __init__(self, client_id, number_of_alive_clients, sender, minimum_surviving_clients_for_reconstruction, number_of_clients, other_client_states, pairwise_key_shares, self_key_shares, transition_listener, async_abort):
-        super().__init__(sender, transition_listener, async_abort)
+        super().__init__(sender, transition_listener, ClientState.R3_UNMASKING, async_abort)
         self.client_id = client_id
         self.number_of_alive_clients = number_of_alive_clients
         self.minimum_surviving_clients_for_reconstruction = minimum_surviving_clients_for_reconstruction
@@ -32,7 +32,7 @@ class SecAggClientR3UnmaskingState(SecAggClientAliveBaseState):
 
         request = message.unmasking_request()
         dead_at_round_3_client_ids = []
-
+        print('dead_3_list: ', request.dead_3_client_ids())
         for i in request.dead_3_client_ids():
             id=i-1
             if id == self.client_id:
@@ -41,7 +41,7 @@ class SecAggClientR3UnmaskingState(SecAggClientAliveBaseState):
                 return self.AbortAndNotifyServer("The received UnmaskingRequest contains a client id that does correspond to any client.")
             if self.other_client_states[id] ==  OtherClientState.kAlive:
                 self.other_client_states[id] = OtherClientState.kDeadAtRound3
-                number_of_alive_clients = number_of_alive_clients-1
+                self.number_of_alive_clients -= 1
             elif self.other_client_states[id] ==  OtherClientState.kDeadAtRound3:
                 return self.AbortAndNotifyServer("The received UnmaskingRequest repeated a client more than once as a dead client.")
             elif self.other_client_states[id] == OtherClientState.kDeadAtRound1:
@@ -51,12 +51,11 @@ class SecAggClientR3UnmaskingState(SecAggClientAliveBaseState):
             else:
                 return self.AbortAndNotifyServer("The received UnmaskingRequest considers a client dead in round 3 that was already considered dead.")
 
-        if number_of_alive_clients <self.minimum_surviving_clients_for_reconstruction:
+        if self.number_of_alive_clients <self.minimum_surviving_clients_for_reconstruction:
             return self.AbortAndNotifyServer("Not enough clients survived. The server should not have sent this UnmaskingRequest.")
 
         message_to_server = ClientToServerWrapperMessage()
         unmasking_response = message_to_server.mutable_unmasking_response()
-
         for i in range(self.number_of_clients):
             if self._async_abort and self._async_abort.Signalled():
                 return self.AbortAndNotifyServer(self._async_abort.Message())

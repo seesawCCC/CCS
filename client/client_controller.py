@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-09-01 16:15:48
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-09-12 20:48:58
+# @Last Modified time: 2022-09-15 16:10:15
 
 import sys, traceback
 
@@ -97,7 +97,7 @@ class ClientController():
 			# client向服务器注册后一直等待直到服务器分发模型或者训练结束
 			print('start receive model from server')
 			message = self._client_stream.Receive()
-			print('receive model from server ', message)
+			print('receive ', type(message))
 			# 训练任务结束
 			if message is None or isinstance(message, TaskOver):
 				self._client_stream.Close()
@@ -113,6 +113,13 @@ class ClientController():
 					traceback.print_exc()
 					break
 				model_parameter = self._model_controller.GetModelParameter()
+			elif isinstance(message, ServerToClientWrapperMessage):
+				if message.has_abort():
+					print('this client has Abort')
+					continue
+				else:
+					self.close()
+					raise Exception("receive a running ServerToClientWrapperMessage from server, client except to receive a Abort")					
 			else:
 				self.close()
 				raise Exception("receive wrong message from server, client except to receive a ModelDistributedMessage or TaskOver")
@@ -129,15 +136,18 @@ class ClientController():
 			print('complete r0, ready to r1')
 			while not self._secagg_client.IsCompletedSuccessfully() and not self._secagg_client.IsAborted():
 				message = self._client_stream.Receive(timeout)
-				print(type(message), message)
+				print('handle secagg state: ', self._secagg_client.State())
 				if not message:
 					break
 				if not isinstance(message, ServerToClientWrapperMessage):
 					self._secagg_client.Abort("secagg_client receive wrong message from server")
 				else:
 					result = self._secagg_client.ReceiveMessage(message)
-					print('handle message. result: ', result.value())
 					FCP_CHECK(result.ok())
+
+			print('a round over, get secagg state ', self._secagg_client.State())
+			if self._secagg_client.IsAborted():
+				print('abort info:', self._secagg_client.ErrorMessage().value())
 		self.close()
 
 	def close(self):
