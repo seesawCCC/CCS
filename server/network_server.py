@@ -617,10 +617,13 @@ class ServerSocket:
         return True
 
     def send(self, socket_, message):
+        if not socket_:
+            return False
         message_length = len(message)
         length_bytes = message_length.to_bytes(4, 'little')
         message = length_bytes + message
         socket_.sendall(message)
+        return True
 
     def recv(self, socket_):
         length_limit = 4096
