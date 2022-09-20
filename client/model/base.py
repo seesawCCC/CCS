@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-08-31 10:47:56
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-08-31 23:29:05
+# @Last Modified time: 2022-09-17 20:07:58
 
 import torch
 
@@ -17,5 +17,5 @@ class BaseModel(torch.nn.Module):
 
 	@staticmethod
 	# 具体的训练, 此方法会被client调用来进行训练
-	def train(model):
+	def Train(model):
 		pass

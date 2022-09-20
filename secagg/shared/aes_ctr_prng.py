@@ -71,7 +71,9 @@ class AesCtrPrng(SecureBatchPrng):
         if self.next_byte_pos >= kCacheSize :
             self.GenerateBytes(self.cache, kCacheSize)
             self.next_byte_pos = 0
-        return self.cache[self.next_byte_pos+1]
+        rand_value = self.cache[self.next_byte_pos]
+        self.next_byte_pos += 1
+        return rand_value
 
     def Rand64(self):
         output = []

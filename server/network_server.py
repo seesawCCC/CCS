@@ -8,6 +8,7 @@
 import socket
 import select
 import time
+import ctypes
 import threading
 import random
 import pickle
@@ -16,7 +17,7 @@ from base.rsa_encryption import RsaEncryption
 from secagg.shared.aes_gcm_encryption import AesGcmEncryption
 from secagg.shared.aes_key import AesKey
 from secagg.shared.secagg_messages import ServerToClientWrapperMessage,ShareKeysRequest,MaskedInputCollectionRequest
-from secagg.shared.secagg_messages import UnmaskingRequest
+from secagg.shared.secagg_messages import UnmaskingRequest, PairOfPublicKeys
 import os
 from secagg.shared.secagg_vector import SecAggVector
 from server.user_pool import UserPool
@@ -26,7 +27,7 @@ from secagg.shared.map_of_masks import MapOfMasks
 from secagg.shared.compute_session_id import ComputeSessionId
 
 class ServerSocket:
-    def __init__(self, host, communication_port,register_port):
+    def __init__(self, host, communication_port,register_port, integerization):
         # host = '127.0.0.1'
         self.host = host
         self.communication_port = communication_port
@@ -59,6 +60,8 @@ class ServerSocket:
         self.pairs_of_public_keys=[]
         self.share_keys = ShareKeysRequest()
         self.session_id = None
+
+        self._integerization = integerization
 
     # 监听两个线程
     def listen(self):
@@ -342,7 +345,7 @@ class ServerSocket:
                     else:
                         user = self.UserPool.GetUserByAddress(i)
                         user['status'] = 0
-                        self.pairs_of_public_keys.append('')
+                        self.pairs_of_public_keys.append(PairOfPublicKeys())
                 self.session_id = ComputeSessionId(self.share_keys)
                 Keys = ShareKeysRequest()
                 Keys.set_pairs_of_public_keys(self.pairs_of_public_keys)
@@ -437,6 +440,7 @@ class ServerSocket:
     # UserAddress列表和公钥列表id相同
     # 输出：通过套接字向用户集合分发秘密
     def server_r2(self,client_message,t,UserAddress,UserAddress1,UserAddress2):
+        self.MaskedInput.clear()
         try:
             # 判断在线用户数量
             if len(UserAddress2) < t:
@@ -593,9 +597,12 @@ class ServerSocket:
                     sum_vector[key] = self.AddSecAggVectors(sum_vector[key],mask[key])
                     # 计算均值
                     vec = sum_vector[key].GetAsUint64Vector()
+                    vec = list(map(lambda x: ctypes.c_long(x).value/self._integerization, vec)) 
                     for i in range(len(vec)):
-                        vec[i] = vec[i]//c_number
-                    sum_vector[key] = SecAggVector(vec, sum_vector[key].modulus())
+                        # vec[i] = vec[i]//c_number
+                        vec[i] = vec[i]/c_number
+                    # sum_vector[key] = SecAggVector(vec, sum_vector[key].modulus())
+                    sum_vector[key] = vec
         except Exception as e:
             traceback.print_exc()
         return sum_vector
@@ -629,6 +636,7 @@ class ServerSocket:
         length_limit = 4096
         data = b''
         recv_data = socket_.recv(length_limit)
+        # now = int(time.time())
         if recv_data:
             data_length = int.from_bytes(recv_data[:4], 'little')
             data += recv_data[4:]
@@ -638,4 +646,5 @@ class ServerSocket:
         while len(data) < data_length:
             recv_data = socket_.recv(length_limit)
             data += recv_data
+        # print('recv length: ', data_length, int(time.time())-now)
         return data        

@@ -2,9 +2,9 @@
 # @Author: gonglinxiao
 # @Date:   2022-09-01 16:15:48
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-09-15 16:10:15
+# @Last Modified time: 2022-09-20 20:06:47
 
-import sys, traceback
+import sys, traceback, time
 
 from .network import Network, ServerAddr
 from .client_stream import ClientStream, TaskOver
@@ -28,12 +28,11 @@ class ClientController():
 		self._network = None
 		self._client_stream = None
 
-		self._model_controller = ModelController()
-		self._model_controller.Load()
-
 		self._max_clients_expected = 0
 		self._minimum_surviving_clients_for_reconstruction = 0
 		self._secagg_client = None
+		self._model_controller = ModelController()
+		self._model_controller.Load()
 
 	def set_network(self):
 		# 设置客户端的ip与相应的端口号
@@ -42,7 +41,7 @@ class ClientController():
 		if self._network:
 			return False
 		if len(sys.argv) > 1:
-			client_ip, register_port, communication_port = sys.argv[1:]
+			client_ip, register_port, communication_port, *_ = sys.argv[1:]
 			register_port = int(register_port)
 			communication_port = int(communication_port)
 		else:
@@ -108,7 +107,9 @@ class ClientController():
 			elif isinstance(message, ModelDistributedMessage):
 				self.set_model_parameter(message)
 				try:
+					now = int(time.time())
 					self._model_controller.Train()
+					print('train spent', int(time.time() - now))
 				except Exception as e:
 					traceback.print_exc()
 					break
@@ -134,16 +135,24 @@ class ClientController():
 			FCP_CHECK(result.ok())
 			timeout = int(self._config['secagg']['max_timeout'])
 			print('complete r0, ready to r1')
-			while not self._secagg_client.IsCompletedSuccessfully() and not self._secagg_client.IsAborted():
-				message = self._client_stream.Receive(timeout)
+			message = self._client_stream.Receive()
+			while True: 
 				print('handle secagg state: ', self._secagg_client.State())
 				if not message:
-					break
-				if not isinstance(message, ServerToClientWrapperMessage):
+					self._secagg_client.Abort("receive message from server timeout")
+				elif not isinstance(message, ServerToClientWrapperMessage):
 					self._secagg_client.Abort("secagg_client receive wrong message from server")
 				else:
 					result = self._secagg_client.ReceiveMessage(message)
-					FCP_CHECK(result.ok())
+					try:
+						FCP_CHECK(result.ok())
+					except Exception as e:
+						print(e)
+						self._secagg_client.Abort(str(e))
+						break
+				if self._secagg_client.IsCompletedSuccessfully() or self._secagg_client.IsAborted():
+					break
+				message = self._client_stream.Receive(timeout)
 
 			print('a round over, get secagg state ', self._secagg_client.State())
 			if self._secagg_client.IsAborted():

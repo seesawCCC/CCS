@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-09-04 21:14:52
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-09-07 17:26:04
+# @Last Modified time: 2022-09-20 21:21:55
 
 import torch
 import ctypes
@@ -27,11 +27,19 @@ class ModelParameter():
 		self._specifications.clear()
 		self._integerization = integerization
 		for name in self._model_state_dict:
-			length = reduce(lambda x,y: x*y, self._model_state_dict[name].size())
+			size_set = list(self._model_state_dict[name].size())
+			print(size_set, name, self._model_state_dict[name].type())
+			if len(size_set) == 1:
+				length = size_set[0]
+			elif len(size_set) == 0:
+				length = 1
+			else:
+				length = reduce(lambda x,y: x*y, size_set)
 			specification = InputVectorSpecification(name, length, modulus)
 			self._specifications.append(specification)
 
 	def get_model_parameter(self):
+		# print(self._model_state_dict[list(self._model_state_dict.keys())[3]])
 		return self._model_state_dict
 
 	def get_specifications(self):
@@ -46,12 +54,14 @@ class ModelParameter():
 			try:
 				recv_secagg_vector = input_map[param_name]
 				size = self._model_state_dict[param_name].size()
-				un_recv_unpack_list = recv_secagg_vector.GetAsUint64Vector()
-				recv_unpack_list = list(map(lambda x: ctypes.c_long(x).value/self._integerization, un_recv_unpack_list)) 
-				recv_tensor = torch.Tensor(recv_unpack_list).view(*size)
+				# un_recv_unpack_list = recv_secagg_vector.GetAsUint64Vector()
+				# recv_unpack_list = list(map(lambda x: ctypes.c_long(x).value/self._integerization, un_recv_unpack_list)) 
+				recv_unpack_list = recv_secagg_vector 
+				recv_tensor = torch.Tensor(recv_unpack_list).view(size)
 				self._model_state_dict[param_name] = recv_tensor
 			except Exception as e:
 				traceback.print_exc()
+		# print(self._model_state_dict[list(self._model_state_dict.keys())[3]])
 
 	def save(self, path):
 		torch.save(self._model_state_dict, path)

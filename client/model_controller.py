@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-08-31 13:32:27
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-09-14 17:12:41
+# @Last Modified time: 2022-09-20 19:46:05
 
 import importlib
 import inspect
@@ -14,15 +14,22 @@ from secagg.shared.secagg_vector import SecAggVector
 class ModelController():
 
 	def __init__(self):
-		self.__train_model_class = self.Load()
-		self.__train_model = self.__train_model_class()
+		self.__train_model_class = self.load_model_class()
+		self.__train_model = None
 		self.vector_specifications = None
 		self._integerization = 0
 
 	# 从client/model目录下自动加载第一个满足条件的训练模型
 	# 所有的模型都是BaseModel的一个子类u
 	# 用于训练的模型需要在client/model/__init__.py下引入
+
 	def Load(self):
+		if self.__train_model:
+			del self.__train_model
+			self.__train_model = None
+		self.__train_model = self.__train_model_class()
+
+	def load_model_class(self):
 		module = importlib.import_module('client.model')
 		module_class = inspect.getmembers(module, inspect.isclass)
 		# print(module_class)
@@ -38,6 +45,7 @@ class ModelController():
 		self._integerization = integerization
 
 	def SetModelParameter(self, parameter):
+		print(parameter[list(parameter.keys())[3]])
 		if not isinstance(parameter, OrderedDict):
 			return False
 		try:
@@ -67,7 +75,10 @@ class ModelController():
 		return input_map
 
 	def Train(self):
-		self.__train_model_class.train(self.__train_model)
+		self.__train_model = self.__train_model_class.Train(self.__train_model)
+
+	def Train_ori(self):
+		self.__train_model = self.__train_model_class.Train_ori(self.__train_model)
 
 	def save_model_paramter(self, path):
 		import torch

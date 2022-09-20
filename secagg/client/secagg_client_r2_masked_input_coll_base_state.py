@@ -13,6 +13,7 @@ from ..shared.aes_gcm_encryption import AesGcmEncryption
 from ..shared.secagg_messages import PairOfKeyShares, ClientToServerWrapperMessage
 from ..shared.shamir_secret_sharing import ShamirShare
 from base.monitoring import FCP_STATUS, FCP_CHECK
+import time
 
 class SecAggClientR2MaskedInputCollBaseState(SecAggClientAliveBaseState):
     def __init__(self, sender, transition_listener, async_abort):
@@ -130,7 +131,6 @@ class SecAggClientR2MaskedInputCollBaseState(SecAggClientAliveBaseState):
             # sum_vec_proto.set_encoded_vector(sum.TakePackedBytes())
             sum_vec_proto = sum
             (to_send.mutable_masked_input_response().mutable_vectors())[pair] = sum_vec_proto;
-
         self._sender.Send(to_send)
 
         return None

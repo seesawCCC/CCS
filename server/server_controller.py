@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-09-07 16:43:55
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-09-15 13:25:53
+# @Last Modified time: 2022-09-20 21:27:04
 
 import os, time
 import pickle
@@ -34,6 +34,7 @@ class ServerController():
 		self._minimum_surviving_clients_for_reconstruction = int(secagg_param['minimum_surviving_clients_for_reconstruction'])
 		self._min_clients_to_start = int(secagg_param['min_clients_to_start'])
 		self._secagg_max_timeout = int(secagg_param['max_timeout'])
+		self._secagg_max_r2_timeout = int(secagg_param['max_r2_timeout'])
 
 	def init_netword(self):
 		server_dict = self._config['server']
@@ -41,7 +42,7 @@ class ServerController():
 		register_port = int(server_dict['register_port'])
 		communication_port = int(server_dict['communication_port'])
 		self._waitting_for_enough_clients_timeout = int(server_dict['waitting_for_enough_clients_timeout'])
-		self._network = ServerSocket(host, communication_port, register_port)
+		self._network = ServerSocket(host, communication_port, register_port, int(self._config['model']['integerization']))
 		self._network.listen()
 
 	def load_init_model(self):
@@ -100,7 +101,7 @@ class ServerController():
 		# 用户池状态已经被刷新了
 
 		# 用户池的消息每轮开始时都会清空
-		client_message = self.wait_for_secagg(init_user_list, self._secagg_max_timeout)
+		client_message = self.wait_for_secagg(init_user_list, self._model_max_timeout)
 		user_address = list(client_message.keys())
 		print(user_address)
 		self.checkout_user_list(init_user_list, user_address)
@@ -116,7 +117,7 @@ class ServerController():
 			self._network.server_r1(client_message, self._minimum_surviving_clients_for_reconstruction, user_address, user_address_1)
 
 			print('start r2')
-			client_message = self.wait_for_secagg(user_address_1, self._secagg_max_timeout)
+			client_message = self.wait_for_secagg(user_address_1, self._secagg_max_r2_timeout)
 			user_address_2 = list(client_message.keys())
 			print(user_address_2)
 			self.checkout_user_list(user_address_1, user_address_2)
@@ -203,14 +204,16 @@ class ServerController():
 			self.refresh_user_pool()
 			time.sleep(1)
 			print(i, ' start deliever model')
-			self.init_client_message()
 			init_user_list = self.deliever_model(init_user_list)
 			print(i, ' start secagg')
+			self.init_client_message()
 			sum_vector = self.secagg(init_user_list)
+
 			if not sum_vector:
 				print(r'secagg failed, get a {}')
 				continue
 			self._model_parameter.set_model_parameter(sum_vector)
+			# print('训练得到: ', sum_vector[list(sum_vector.keys())[3]])
 
 		print('over')
 		self.send_over(self._user_pool.GetAllUserAddress(), 'train over')
