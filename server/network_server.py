@@ -633,18 +633,22 @@ class ServerSocket:
         return True
 
     def recv(self, socket_):
-        length_limit = 4096
+        length_limit = 8192
         data = b''
+        has_recv_len = 0
         recv_data = socket_.recv(length_limit)
         # now = int(time.time())
         if recv_data:
             data_length = int.from_bytes(recv_data[:4], 'little')
             data += recv_data[4:]
+            has_recv_len += len(data)
         else:
             return recv_data
 
-        while len(data) < data_length:
+        data_set = [data]
+        while has_recv_len < data_length:
             recv_data = socket_.recv(length_limit)
-            data += recv_data
+            data_set.append(recv_data)
+            has_recv_len += len(recv_data)
         # print('recv length: ', data_length, int(time.time())-now)
-        return data        
+        return b''.join(data_set)

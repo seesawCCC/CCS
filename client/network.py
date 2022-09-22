@@ -2,7 +2,7 @@
 # @Author: gonglinxiao
 # @Date:   2022-08-12 21:30:31
 # @Last Modified by:   shanzhuAndfish
-# @Last Modified time: 2022-09-13 18:40:53
+# @Last Modified time: 2022-09-21 17:24:56
 
 import socket
 import traceback
@@ -176,6 +176,7 @@ class Network():
             length = len(data)
             length_bytes = length.to_bytes(4, 'little')
             message = length_bytes+data
+            print('send bytes: ', len(message))
             self._connect_server_socket.sendall(message)
             return True
         except Exception as e:
@@ -272,18 +273,23 @@ class Network():
         return hobj.hexdigest().upper()[:32]
 
     def _recv_from_socket(self, socket_):
-        length_limit = 4096
+        length_limit = 8192
         data = b''
+        has_recv_len = 0
 
         recv_data = socket_.recv(length_limit)
         if recv_data:
             data_length = int.from_bytes(recv_data[:4], 'little')
             data += recv_data[4:]
+            has_recv_len += len(data)
         else:
             return data
 
-        while len(data) < data_length:
-            recv_data = socket_.recv(length_limit)
-            data += recv_data
+        data_set = [data]
 
-        return data
+        while has_recv_len < data_length:
+            recv_data = socket_.recv(length_limit)
+            has_recv_len += len(recv_data)
+            data_set.append(recv_data)
+
+        return b''.join(data_set)
